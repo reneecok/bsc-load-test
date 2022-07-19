@@ -27,7 +27,7 @@ var (
 )
 
 // V2factoryABI is the input ABI used to generate the binding from.
-const V2factoryABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"PairCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"allPairs\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"allPairsLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenA\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenB\",\"type\":\"address\"}],\"name\":\"createPair\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeTo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeToSetter\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenA\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenB\",\"type\":\"address\"}],\"name\":\"getPair\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"setFeeTo\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"setFeeToSetter\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const V2factoryABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeToSetter\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token0\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token1\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"PairCreated\",\"type\":\"event\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"allPairs\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"allPairsLength\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"tokenA\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"tokenB\",\"type\":\"address\"}],\"name\":\"createPair\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"pair\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"feeTo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"feeToSetter\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"getPair\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"getPairInitHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeTo\",\"type\":\"address\"}],\"name\":\"setFeeTo\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_feeToSetter\",\"type\":\"address\"}],\"name\":\"setFeeToSetter\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // V2factory is an auto generated Go binding around an Ethereum contract.
 type V2factory struct {
@@ -173,7 +173,7 @@ func (_V2factory *V2factoryTransactorRaw) Transact(opts *bind.TransactOpts, meth
 
 // AllPairs is a free data retrieval call binding the contract method 0x1e3dd18b.
 //
-// Solidity: function allPairs(uint256 ) view returns(address pair)
+// Solidity: function allPairs(uint256 ) view returns(address)
 func (_V2factory *V2factoryCaller) AllPairs(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
 	var out []interface{}
 	err := _V2factory.contract.Call(opts, &out, "allPairs", arg0)
@@ -190,14 +190,14 @@ func (_V2factory *V2factoryCaller) AllPairs(opts *bind.CallOpts, arg0 *big.Int) 
 
 // AllPairs is a free data retrieval call binding the contract method 0x1e3dd18b.
 //
-// Solidity: function allPairs(uint256 ) view returns(address pair)
+// Solidity: function allPairs(uint256 ) view returns(address)
 func (_V2factory *V2factorySession) AllPairs(arg0 *big.Int) (common.Address, error) {
 	return _V2factory.Contract.AllPairs(&_V2factory.CallOpts, arg0)
 }
 
 // AllPairs is a free data retrieval call binding the contract method 0x1e3dd18b.
 //
-// Solidity: function allPairs(uint256 ) view returns(address pair)
+// Solidity: function allPairs(uint256 ) view returns(address)
 func (_V2factory *V2factoryCallerSession) AllPairs(arg0 *big.Int) (common.Address, error) {
 	return _V2factory.Contract.AllPairs(&_V2factory.CallOpts, arg0)
 }
@@ -297,10 +297,10 @@ func (_V2factory *V2factoryCallerSession) FeeToSetter() (common.Address, error) 
 
 // GetPair is a free data retrieval call binding the contract method 0xe6a43905.
 //
-// Solidity: function getPair(address tokenA, address tokenB) view returns(address pair)
-func (_V2factory *V2factoryCaller) GetPair(opts *bind.CallOpts, tokenA common.Address, tokenB common.Address) (common.Address, error) {
+// Solidity: function getPair(address , address ) view returns(address)
+func (_V2factory *V2factoryCaller) GetPair(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (common.Address, error) {
 	var out []interface{}
-	err := _V2factory.contract.Call(opts, &out, "getPair", tokenA, tokenB)
+	err := _V2factory.contract.Call(opts, &out, "getPair", arg0, arg1)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -314,16 +314,47 @@ func (_V2factory *V2factoryCaller) GetPair(opts *bind.CallOpts, tokenA common.Ad
 
 // GetPair is a free data retrieval call binding the contract method 0xe6a43905.
 //
-// Solidity: function getPair(address tokenA, address tokenB) view returns(address pair)
-func (_V2factory *V2factorySession) GetPair(tokenA common.Address, tokenB common.Address) (common.Address, error) {
-	return _V2factory.Contract.GetPair(&_V2factory.CallOpts, tokenA, tokenB)
+// Solidity: function getPair(address , address ) view returns(address)
+func (_V2factory *V2factorySession) GetPair(arg0 common.Address, arg1 common.Address) (common.Address, error) {
+	return _V2factory.Contract.GetPair(&_V2factory.CallOpts, arg0, arg1)
 }
 
 // GetPair is a free data retrieval call binding the contract method 0xe6a43905.
 //
-// Solidity: function getPair(address tokenA, address tokenB) view returns(address pair)
-func (_V2factory *V2factoryCallerSession) GetPair(tokenA common.Address, tokenB common.Address) (common.Address, error) {
-	return _V2factory.Contract.GetPair(&_V2factory.CallOpts, tokenA, tokenB)
+// Solidity: function getPair(address , address ) view returns(address)
+func (_V2factory *V2factoryCallerSession) GetPair(arg0 common.Address, arg1 common.Address) (common.Address, error) {
+	return _V2factory.Contract.GetPair(&_V2factory.CallOpts, arg0, arg1)
+}
+
+// GetPairInitHash is a free data retrieval call binding the contract method 0x06ac8248.
+//
+// Solidity: function getPairInitHash() pure returns(bytes32)
+func (_V2factory *V2factoryCaller) GetPairInitHash(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _V2factory.contract.Call(opts, &out, "getPairInitHash")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GetPairInitHash is a free data retrieval call binding the contract method 0x06ac8248.
+//
+// Solidity: function getPairInitHash() pure returns(bytes32)
+func (_V2factory *V2factorySession) GetPairInitHash() ([32]byte, error) {
+	return _V2factory.Contract.GetPairInitHash(&_V2factory.CallOpts)
+}
+
+// GetPairInitHash is a free data retrieval call binding the contract method 0x06ac8248.
+//
+// Solidity: function getPairInitHash() pure returns(bytes32)
+func (_V2factory *V2factoryCallerSession) GetPairInitHash() ([32]byte, error) {
+	return _V2factory.Contract.GetPairInitHash(&_V2factory.CallOpts)
 }
 
 // CreatePair is a paid mutator transaction binding the contract method 0xc9c65396.
@@ -349,44 +380,44 @@ func (_V2factory *V2factoryTransactorSession) CreatePair(tokenA common.Address, 
 
 // SetFeeTo is a paid mutator transaction binding the contract method 0xf46901ed.
 //
-// Solidity: function setFeeTo(address ) returns()
-func (_V2factory *V2factoryTransactor) SetFeeTo(opts *bind.TransactOpts, arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.contract.Transact(opts, "setFeeTo", arg0)
+// Solidity: function setFeeTo(address _feeTo) returns()
+func (_V2factory *V2factoryTransactor) SetFeeTo(opts *bind.TransactOpts, _feeTo common.Address) (*types.Transaction, error) {
+	return _V2factory.contract.Transact(opts, "setFeeTo", _feeTo)
 }
 
 // SetFeeTo is a paid mutator transaction binding the contract method 0xf46901ed.
 //
-// Solidity: function setFeeTo(address ) returns()
-func (_V2factory *V2factorySession) SetFeeTo(arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.Contract.SetFeeTo(&_V2factory.TransactOpts, arg0)
+// Solidity: function setFeeTo(address _feeTo) returns()
+func (_V2factory *V2factorySession) SetFeeTo(_feeTo common.Address) (*types.Transaction, error) {
+	return _V2factory.Contract.SetFeeTo(&_V2factory.TransactOpts, _feeTo)
 }
 
 // SetFeeTo is a paid mutator transaction binding the contract method 0xf46901ed.
 //
-// Solidity: function setFeeTo(address ) returns()
-func (_V2factory *V2factoryTransactorSession) SetFeeTo(arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.Contract.SetFeeTo(&_V2factory.TransactOpts, arg0)
+// Solidity: function setFeeTo(address _feeTo) returns()
+func (_V2factory *V2factoryTransactorSession) SetFeeTo(_feeTo common.Address) (*types.Transaction, error) {
+	return _V2factory.Contract.SetFeeTo(&_V2factory.TransactOpts, _feeTo)
 }
 
 // SetFeeToSetter is a paid mutator transaction binding the contract method 0xa2e74af6.
 //
-// Solidity: function setFeeToSetter(address ) returns()
-func (_V2factory *V2factoryTransactor) SetFeeToSetter(opts *bind.TransactOpts, arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.contract.Transact(opts, "setFeeToSetter", arg0)
+// Solidity: function setFeeToSetter(address _feeToSetter) returns()
+func (_V2factory *V2factoryTransactor) SetFeeToSetter(opts *bind.TransactOpts, _feeToSetter common.Address) (*types.Transaction, error) {
+	return _V2factory.contract.Transact(opts, "setFeeToSetter", _feeToSetter)
 }
 
 // SetFeeToSetter is a paid mutator transaction binding the contract method 0xa2e74af6.
 //
-// Solidity: function setFeeToSetter(address ) returns()
-func (_V2factory *V2factorySession) SetFeeToSetter(arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.Contract.SetFeeToSetter(&_V2factory.TransactOpts, arg0)
+// Solidity: function setFeeToSetter(address _feeToSetter) returns()
+func (_V2factory *V2factorySession) SetFeeToSetter(_feeToSetter common.Address) (*types.Transaction, error) {
+	return _V2factory.Contract.SetFeeToSetter(&_V2factory.TransactOpts, _feeToSetter)
 }
 
 // SetFeeToSetter is a paid mutator transaction binding the contract method 0xa2e74af6.
 //
-// Solidity: function setFeeToSetter(address ) returns()
-func (_V2factory *V2factoryTransactorSession) SetFeeToSetter(arg0 common.Address) (*types.Transaction, error) {
-	return _V2factory.Contract.SetFeeToSetter(&_V2factory.TransactOpts, arg0)
+// Solidity: function setFeeToSetter(address _feeToSetter) returns()
+func (_V2factory *V2factoryTransactorSession) SetFeeToSetter(_feeToSetter common.Address) (*types.Transaction, error) {
+	return _V2factory.Contract.SetFeeToSetter(&_V2factory.TransactOpts, _feeToSetter)
 }
 
 // V2factoryPairCreatedIterator is returned from FilterPairCreated and is used to iterate over the raw logs and unpacked data for PairCreated events raised by the V2factory contract.
