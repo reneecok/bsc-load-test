@@ -23,8 +23,8 @@ import (
 
 type ExtAcc struct {
 	Client *ethclient.Client
-	Key  *ecdsa.PrivateKey
-	Addr *common.Address
+	Key    *ecdsa.PrivateKey
+	Addr   *common.Address
 }
 
 func NewExtAcc(client *ethclient.Client, hexkey string, hexaddr string) (*ExtAcc, error) {
@@ -127,13 +127,20 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
-	ctx := context.Background()
-	gasPrice, err := ea.Client.SuggestGasPrice(ctx)
+	gasPrice, err := ea.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	chainID, err := ea.Client.ChainID(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	//
-	transactOpts := bind.NewKeyedTransactor(ea.Key)
+	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, chainID)
+	if err != nil {
+		return nil, err
+	}
 	transactOpts.Nonce = big.NewInt(int64(*nonce))
 	transactOpts.Value = big.NewInt(0)
 	transactOpts.GasLimit = *gasLimit

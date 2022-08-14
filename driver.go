@@ -35,8 +35,10 @@ var initTestAcc *bool
 var resetTestAcc *bool
 
 var bep20Hex *string
+
 // A tokens for liquidity pairs
 var bep20AddrsA []common.Address
+
 // B tokens for liquidity pairs
 var bep20AddrsB []common.Address
 
@@ -95,7 +97,7 @@ func init() {
 
 	tokens := strings.Split(*bep20Hex, ",")
 
-	h := len(tokens)/2
+	h := len(tokens) / 2
 	l := len(tokens)
 	for _, v := range tokens[0:h] {
 		bep20AddrsA = append(bep20AddrsA, common.HexToAddress(v))
@@ -112,7 +114,7 @@ func init() {
 	uniswapFactoryAddr = common.HexToAddress(*uniswapFactoryHex)
 	uniswapRouterAddr = common.HexToAddress(*uniswapRouterHex)
 
-	scenarios = []utils.Scenario {
+	scenarios = []utils.Scenario{
 		utils.Scenario{utils.SendBNB, 5},
 		utils.Scenario{utils.SendBEP20, 5},
 		utils.Scenario{utils.AddLiquidity, 5},
@@ -121,7 +123,7 @@ func init() {
 		utils.Scenario{utils.SwapBNBForExactTokens, 35},
 		utils.Scenario{utils.DepositWBNB, 5},
 		utils.Scenario{utils.WithdrawWBNB, 5},
-		}
+	}
 
 	distributeAmount = big.NewInt(1e18)
 	liquidityInitAmount = new(big.Int)
@@ -462,7 +464,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				hash, err = ea.SendBEP20(nonce, &bep20AddrsA[index], eaSlice[j].Addr, liquidityTestAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
-						return
+					return
 				}
 			} else if scenario.Name == utils.AddLiquidity {
 				//
@@ -542,7 +544,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 					// wbnb-bep20
 					pair, err := ea.GetPair(&uniswapFactoryAddr, &wbnbAddr, &bep20AddrsA[index])
 					if err != nil {
-						log.Println("error: get pair:", err)
+						log.Println("error: get pair:", err, "bep20:", bep20AddrsA[index].Hex())
 						return
 					}
 					balance, err := ea.GetBEP20Balance(pair)
@@ -605,7 +607,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 					log.Println("error: deposit wbnb:", err)
 					return
 				}
-			} else if scenario.Name == utils.WithdrawWBNB  {
+			} else if scenario.Name == utils.WithdrawWBNB {
 				//
 				hash, err = ea.WithdrawWBNB(nonce, &wbnbAddr, liquidityTestAmount)
 				if err != nil {
@@ -633,7 +635,7 @@ func setupTimer(dur time.Duration) *bool {
 	t := time.NewTimer(dur)
 	expired := false
 	go func() {
-		<- t.C
+		<-t.C
 		expired = true
 	}()
 	return &expired
