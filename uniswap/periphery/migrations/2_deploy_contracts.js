@@ -20,7 +20,7 @@ module.exports = async function(deployer, network) {
 
     await deployer.deploy(Router, factoryJson['address'], wbnb.address);
     var router = await Router.deployed();
-
+    console.log('router: ' + router.address)
     var wbnbJson = {};
     filepath = path.join(path.dirname(__filename), 'wbnb.json');
     wbnbJson['address'] = wbnb.address;

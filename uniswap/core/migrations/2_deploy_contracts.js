@@ -9,7 +9,11 @@ module.exports = async function(deployer, network, addresses) {
     await deployer.deploy(Factory, addresses[0]);
     var factory = await Factory.deployed();
     console.log(factory.address);
+    let pairInitHash = await factory.getPairInitHash();
+    console.log("pairInitHash:", pairInitHash.toString())
     factoryJson['address'] = factory.address;
+    factoryJson['pairInitHash'] = pairInitHash;
+
     var filepath = path.join(path.dirname(__filename), 'factory.json');
     utils.writeJsonObject(filepath, factoryJson);
 
