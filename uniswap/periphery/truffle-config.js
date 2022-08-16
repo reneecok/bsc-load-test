@@ -20,21 +20,21 @@ module.exports = {
     qa: {
       provider: () => new HDWalletProvider(mnemonic, `http://172.22.41.197:8545`),
       network_id: 96,
-      confirmations: 10,
+      confirmations: 3,
       timeoutBlocks: 200,
       skipDryRun: true
     },
     testnet: {
       provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
-      confirmations: 10,
+      confirmations: 3,
       timeoutBlocks: 200,
       skipDryRun: true
     },
     bsc: {
       provider: () => new HDWalletProvider(mnemonic, `https://bsc-dataseed1.binance.org`),
       network_id: 56,
-      confirmations: 10,
+      confirmations: 3,
       timeoutBlocks: 200,
       skipDryRun: true
     },
@@ -52,7 +52,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 1500   // Optimize for how many times you intend to run the code
+          runs: 200   // Optimize for how many times you intend to run the code
         }
       }
     }
