@@ -107,22 +107,21 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 			continue
 		}
 		count := uint64(len(block.Transactions()))
+		var gasPerTx uint64
 		if count == 0 {
-			log.Printf("# %d, %v, # of trans: %d, gasLimit: %d, gasUsed: %d, %v\n",
-				block.Number().Uint64(),
-				time.Unix(int64(block.Time()), 0),
-				len(block.Transactions()),
-				block.GasLimit(),
-				block.GasUsed(), 0)
+			gasPerTx = 0
 		} else {
-			log.Printf("# %d, %v, # of trans: %d, gasLimit: %d, gasUsed: %d, %v\n",
-				block.Number().Uint64(),
-				time.Unix(int64(block.Time()), 0),
-				len(block.Transactions()),
-				block.GasLimit(),
-				block.GasUsed(),
-				block.GasUsed()/count)
+			gasPerTx = block.GasUsed()/count
 		}
+		log.Printf("#%d, %s, D: %d, %v, TX: %d, L: %d, U: %d, %d\n",
+			block.Number().Uint64(),
+			block.Coinbase().Hex(),
+			block.Difficulty().Uint64(),
+			time.Unix(int64(block.Time()), 0),
+			len(block.Transactions()),
+			block.GasLimit(),
+			block.GasUsed(),
+			gasPerTx)
 	}
 }
 
