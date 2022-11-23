@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -97,7 +96,13 @@ func RandHexKeys(fullpath string, numOfKeys int) {
 }
 
 func LoadHexKeys(fullpath string, numOfKeys int) [][]string {
-	items := make([][]string, 0, numOfKeys)
+	var batches [][]string
+	batchSize := 100000
+	if numOfKeys <= batchSize {
+		batches = make([][]string, 0, 1)
+	} else {
+		batches = make([][]string, 0, (numOfKeys/batchSize)+1)
+	}
 	keyfile, err := os.Open(fullpath)
 	if err != nil {
 		panic(err)
@@ -105,17 +110,24 @@ func LoadHexKeys(fullpath string, numOfKeys int) [][]string {
 	defer keyfile.Close()
 	//
 	index := 0
-	scan := bufio.NewScanner(keyfile)
-	for scan.Scan() {
+	lines := make([]string, 0, batchSize)
+	scanner := bufio.NewScanner(keyfile)
+	for scanner.Scan() {
 		if index == numOfKeys {
 			break
 		}
-		line := scan.Text()
-		item := strings.Split(line, ",")
-		items = append(items, item)
+		line := scanner.Text()
+		if index != 0 && index % batchSize == 0 {
+			batches = append(batches, lines)
+			lines = make([]string, 0, batchSize)
+		}
+		lines = append(lines, line)
 		index++
 	}
-	return items
+	if len(lines) > 0 {
+		batches = append(batches, lines)
+	}
+	return batches
 }
 
 func SaveHash(fullpath string, results []*common.Hash) error {

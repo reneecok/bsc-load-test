@@ -357,16 +357,36 @@ func cleanup(clients []*ethclient.Client) {
 }
 
 func load(clients []*ethclient.Client) []utils.ExtAcc {
-	items := utils.LoadHexKeys(*hexkeyfile, *usersLoaded)
-	eaSlice := make([]utils.ExtAcc, 0, len(items))
-	for i, v := range items {
-		client := clients[i%len(clients)]
-		ea, err := utils.NewExtAcc(client, v[0], v[1])
-		if err != nil {
-			panic(err.Error())
-		}
-		eaSlice = append(eaSlice, *ea)
+	batches := utils.LoadHexKeys(*hexkeyfile, *usersLoaded)
+	eaSlice := make([]utils.ExtAcc, 0, *usersLoaded)
+	//
+	start := time.Now()
+	var wg sync.WaitGroup
+	var mx sync.Mutex
+	for i, batch := range batches {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, i int, batch []string) {
+			defer wg.Done()
+			log.Printf("processing ea batch [%d]", i)
+			for j, v := range batch {
+				client := clients[j%len(clients)]
+				items := strings.Split(v, ",")
+				ea, err := utils.NewExtAcc(client, items[0], items[1])
+				if err != nil {
+					panic(err.Error())
+				}
+				mx.Lock()
+				eaSlice = append(eaSlice, *ea)
+				mx.Unlock()
+			}
+		}(&wg, i, batch)
 	}
+	wg.Wait()
+	//
+	end := time.Now()
+	log.Printf("ea load time (ms): %d",
+		end.Sub(start).Milliseconds())
+	log.Printf("%d loaded", len(eaSlice))
 	return eaSlice
 }
 
