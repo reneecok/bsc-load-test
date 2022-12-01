@@ -30,7 +30,11 @@ async function main() {
     }
     contractAddress['bep20'] = addresses;
     console.log("==== bep20 deployed======");
-    console.log(addresses);
+    let printBep20Address = addresses[0]
+    for (let i = 1; i < addresses.length; i++) {
+        printBep20Address += "," + addresses[i]
+    }
+    console.log('factory: ' + printBep20Address);
 
     var factory = await Factory.deploy(owner.address);
     await factory.deployed();
