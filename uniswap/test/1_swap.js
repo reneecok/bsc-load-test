@@ -144,8 +144,3 @@ describe('swap bep20 Test', function () {
         await utils.checkTransStatus(tx);
     });
 });
-
-// async function checkTransStatus(tx) {
-//     let receipt = await tx.wait();
-//     expect(receipt.status).equal(1);
-// }
