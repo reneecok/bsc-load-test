@@ -1,0 +1,19 @@
+{
+  "name": "hardhat-project",
+  "scripts": {},
+  "dependencies": {
+    "@chainlink/contracts": "^0.5.1",
+    "@uniswap/lib": "^4.0.1-alpha",
+    "@uniswap/v2-core": "uniswap/v2-core",
+    "dotenv": "^16.0.3",
+    "npx": "^10.2.2"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.1",
+    "chai": "^4.3.7",
+    "chai-bn": "^0.3.0",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.2",
+    "solidity-coverage": "^0.8.2"
+  }
+}

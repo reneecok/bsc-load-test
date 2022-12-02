@@ -1,0 +1,105 @@
+// import { ethers } from "hardhat";
+require('dotenv').config('../.env')
+const {ethers} = require('hardhat');
+const path = require('path');
+
+const utils = require('./utils.js');
+const numOfContract = process.env.NumberOfContract
+
+async function main() {
+    const [owner] = await ethers.getSigners();
+    let contractAddress = {};
+    console.log('owner: ' + owner.address)
+    // We get the contract to deploy bep20
+    let Token = await ethers.getContractFactory('BEP20Token');
+    let Factory = await ethers.getContractFactory('UniswapV2Factory');
+    let WBNB = await ethers.getContractFactory('WBNB');
+    let Router = await ethers.getContractFactory('UniswapV2Router02');
+
+    let addresses = [];
+    for (let i = 0; i < numOfContract; i++) {
+        let tokenName, tokenSymbol;
+        if (i < 10) {
+            tokenSymbol = 'X0' + i;
+        } else {
+            tokenSymbol = 'X' + i;
+        }
+        tokenName = tokenSymbol + ' Token';
+        let token = await Token.deploy(tokenName, tokenSymbol);
+        await token.deployed();
+        console.log(tokenName + ": " + token.address);
+        addresses.push(token.address);
+    }
+    contractAddress['bep20'] = addresses;
+    console.log("==== bep20 deployed======");
+    console.log('bep20: ' + addresses);
+
+    let factory = await Factory.deploy(owner.address);
+    await factory.deployed();
+    console.log('factory: ' + factory.address);
+
+    let pairInitHash = await factory.getPairInitHash();
+    console.log("pairInitHash:", pairInitHash.toString())
+    contractAddress['factory'] = factory.address;
+    contractAddress['pairInitHash'] = pairInitHash;
+
+
+    let addresses_ = contractAddress['bep20'];
+
+    let from = addresses_.slice(0, addresses_.length / 2);
+    let to = addresses_.slice(addresses_.length / 2, addresses_.length);
+    console.log('from: ' + from);
+    console.log('to: ' + to);
+
+    let wbnb = await WBNB.deploy();
+    await wbnb.deployed();
+    console.log('wbnb: ' + wbnb.address);
+    contractAddress['WBNB'] = wbnb.address
+
+    for (let i = 0; i < addresses_.length / 2; i++) {
+        let transaction = await factory.createPair(from[i], to[i]);
+        let tx_receipt = await transaction.wait()
+        console.log('createPair 0  status: ' + tx_receipt.status);
+
+        let transaction2 = await factory.createPair(from[i], wbnb.address);
+        let tx_receipt2 = await transaction2.wait()
+        console.log('createPair 1 success tx status: ' + tx_receipt2.status);
+
+        let transaction3 = await factory.createPair(wbnb.address, to[i]);
+        let tx_receipt3 = await transaction3.wait()
+        console.log('createPair 2 success tx status: ' + tx_receipt3.status);
+
+        let pair = await factory.getPair(from[i], to[i]);
+        console.log('index: ' + i + ' pair: ' + pair);
+    }
+
+
+    let router = await Router.deploy(factory.address, wbnb.address)
+    await router.deployed();
+    console.log('router: ' + router.address);
+    contractAddress['Router'] = router.address
+
+    let filepath = path.join(path.dirname(__filename), '../contracts.json');
+    utils.writeJsonObject(filepath, contractAddress);
+
+    // print out all params
+    let ben20ContractAddress = contractAddress["bep20"];
+    let printBep20Address = ben20ContractAddress[0];
+    for (let i = 1; i < ben20ContractAddress.length; i++) {
+        printBep20Address += "," + ben20ContractAddress[i];
+    }
+    let routerContractAddress = contractAddress["Router"];
+    let wbnbContractAddress = contractAddress['WBNB'];
+    let factoryContractAddress = contractAddress['factory'];
+
+    console.log("\nCopy Command Line Params From Here: \n")
+    console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
+        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress)
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });
