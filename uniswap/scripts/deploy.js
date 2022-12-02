@@ -92,10 +92,8 @@ async function main() {
     let wbnbContractAddress = contractAddress['WBNB'];
     let factoryContractAddress = contractAddress['factory'];
 
-    console.log("")
-    console.log("Copy Command Line Params From Here: ")
-    console.log("")
-    console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-router=" + routerContractAddress + " " +
+    console.log("\nCopy Command Line Params From Here: \n")
+    console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
         "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress)
 }
 
