@@ -1,8 +1,10 @@
 const fs = require('fs');
+const {expect} = require("chai");
 
 module.exports = {
     writeJsonObject,
-    readJsonObject
+    readJsonObject,
+    checkTransStatus
 };
 
 function writeJsonObject(filepath, jsonObj) {
@@ -16,4 +18,9 @@ function readJsonObject(filepath) {
     return JSON.parse(
         fs.readFileSync(filepath).toString()
     )
+}
+
+async function checkTransStatus(tx) {
+    let receipt = await tx.wait();
+    expect(receipt.status).equal(1);
 }

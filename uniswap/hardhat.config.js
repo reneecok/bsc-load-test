@@ -8,15 +8,7 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY
 module.exports = {
   defaultNetwork: "cubeTestnet",
   networks: {
-    cubeTestnet: {
-      url: "https://bas-cube-devnet.nodereal.cc",
-      accounts: [PRIVATE_KEY]
-    },
-    cubeQA: {
-      url: "https://bas-cube-devnet.bk.nodereal.cc",
-      accounts: [PRIVATE_KEY]
-    },
-    bsctestnet: {
+    default: {
       url: RPC_URL,
       accounts: [PRIVATE_KEY]
     }
