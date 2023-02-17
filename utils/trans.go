@@ -111,7 +111,7 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 		if count == 0 {
 			gasPerTx = 0
 		} else {
-			gasPerTx = block.GasUsed()/count
+			gasPerTx = block.GasUsed() / count
 		}
 		log.Printf("#%d, %s, D: %d, %v, TX: %d, L: %d, U: %d, %d\n",
 			block.Number().Uint64(),
