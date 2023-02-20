@@ -494,13 +494,13 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				r := rand.Intn(10000) % 2
 				if r == 0 {
 					// bep20-bep20
-					_, err := ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, liquidityTestAmount)
+					_, err := ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve bep20:", err)
 						return
 					}
 					nonce++
-					_, err = ea.ApproveBEP20(nonce, &bep20AddrsB[index], &uniswapRouterAddr, liquidityTestAmount)
+					_, err = ea.ApproveBEP20(nonce, &bep20AddrsB[index], &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve bep20:", err)
 						return
@@ -514,13 +514,13 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				}
 				if r == 1 {
 					// wbnb-bep20
-					_, err := ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, liquidityTestAmount)
+					_, err := ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve wbnb:", err)
 						return
 					}
 					nonce++
-					_, err = ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, liquidityTestAmount)
+					_, err = ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve bep20:", err)
 						return
@@ -605,7 +605,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				}
 				hash, err = ea.SwapExactTokensForTokens(nonce, &uniswapRouterAddr, liquidityTestAmount, path, ea.Addr)
 				if err != nil {
-					log.Println("error: swap exact tokens for tokens:", err)
+					log.Println("error: swap exact tokens for tokens:", err, path[0].Hex(), path[1].Hex())
 					return
 				}
 			} else if scenario.Name == utils.SwapBNBForExactTokens {
@@ -617,19 +617,24 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				path := make([]common.Address, 0, 2)
 				r := rand.Intn(10000) % 2
 				if r == 0 {
-					path = append(path, wbnbAddr)
 					path = append(path, bep20AddrsA[index])
+					path = append(path, wbnbAddr)
+					hash, err = ea.SwapExactTokensForBNB(nonce, &uniswapRouterAddr, liquidityTestAmount, actualAmount, path, ea.Addr)
+					if err != nil {
+						log.Println("error: SwapExactTokensForBNB:", err, path[0].Hex(), path[1].Hex())
+						return
+					}
 				}
 				if r == 1 {
-					path = append(path, bep20AddrsA[index])
 					path = append(path, wbnbAddr)
+					path = append(path, bep20AddrsA[index])
+					hash, err = ea.SwapBNBForExactTokens(nonce, &uniswapRouterAddr, liquidityTestAmount, actualAmount, path, ea.Addr)
+					if err != nil {
+						log.Println("error: SwapBNBForExactTokens:", err, path[0].Hex(), path[1].Hex())
+						return
+					}
 				}
 				//
-				hash, err = ea.SwapBNBForExactTokens(nonce, &uniswapRouterAddr, liquidityTestAmount, actualAmount, path, ea.Addr)
-				if err != nil {
-					log.Println("error: swap bnb for exact tokens:", err)
-					return
-				}
 			} else if scenario.Name == utils.DepositWBNB {
 				//
 				hash, err = ea.DepositWBNB(nonce, &wbnbAddr, liquidityTestAmount)

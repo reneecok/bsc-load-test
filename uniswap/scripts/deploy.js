@@ -57,20 +57,27 @@ async function main() {
     contractAddress['WBNB'] = wbnb.address
 
     for (let i = 0; i < addresses_.length / 2; i++) {
+
         let transaction = await factory.createPair(from[i], to[i]);
         let tx_receipt = await transaction.wait()
-        console.log('createPair 0  status: ' + tx_receipt.status);
+        console.log('pair: ' , from[i], to[i],' status: ' + tx_receipt.status);
+
+        let pair0 = await factory.getPair(from[i], to[i]);
+        console.log('index: ' + i + ' pair0: ' + pair0)
 
         let transaction2 = await factory.createPair(from[i], wbnb.address);
         let tx_receipt2 = await transaction2.wait()
-        console.log('createPair 1 success tx status: ' + tx_receipt2.status);
+        console.log('pair: ' , from[i], wbnb.address,' status: '  + tx_receipt2.status);
+        let pair1 = await factory.getPair(from[i], wbnb.address);
+        console.log('index: ' + i + ' pair1: ' + pair1)
 
-        let transaction3 = await factory.createPair(wbnb.address, to[i]);
+        let transaction3 = await factory.createPair(to[i], wbnb.address);
         let tx_receipt3 = await transaction3.wait()
-        console.log('createPair 2 success tx status: ' + tx_receipt3.status);
+        console.log('pair: ' , to[i], wbnb.address,' status: '  + tx_receipt3.status);
 
-        let pair = await factory.getPair(from[i], to[i]);
-        console.log('index: ' + i + ' pair: ' + pair);
+        let pair2 = await factory.getPair(to[i], wbnb.address);
+        console.log('index: ' + i + ' pair2: ' + pair2)
+
     }
 
 
