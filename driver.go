@@ -336,10 +336,10 @@ func main() {
 		}
 		log.Printf("the latest block: %d\n", block.Number().Uint64())
 		results := exec(eaSlice)
-		log.Println("# of tx hash returned in load test:", len(results))
+		log.Println("# tx hash returned in load test:", len(results))
 		// check all transaction status
 		finishedNumber := checkAllTransactionStatus(root, results)
-		log.Println("# of tx finished in load test:", finishedNumber)
+		log.Println("# tx finished in load test:", finishedNumber)
 		dir := filepath.Dir(*hexkeyfile)
 		suffix := time.Now().UnixNano()
 		fullpath := filepath.Join(dir, "results", fmt.Sprintf("results_%d.csv", suffix))
@@ -669,9 +669,9 @@ func checkAllTransactionStatus(root *utils.ExtAcc, hashList []*common.Hash) int 
 	var wg sync.WaitGroup
 	var numberLock sync.Mutex
 	wg.Add(len(hashList))
+	limiter := ratelimit.New(*tps)
 	txnFinishedNumber := 0
 	for i := 0; i < len(hashList); i++ {
-		limiter := ratelimit.New(*tps)
 		limiter.Take()
 		receipt := root.GetReceipt(hashList[i], 10)
 		if receipt.Status == 1 {
