@@ -111,7 +111,7 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 		if count == 0 {
 			gasPerTx = 0
 		} else {
-			gasPerTx = block.GasUsed()/count
+			gasPerTx = block.GasUsed() / count
 		}
 		log.Printf("#%d, %s, D: %d, %v, TX: %d, L: %d, U: %d, %d\n",
 			block.Number().Uint64(),
@@ -299,7 +299,7 @@ func (ea *ExtAcc) SwapExactTokensForTokens(nonce uint64, contAddr *common.Addres
 	return &hash, nil
 }
 
-// uniswap, swap bnb to bep20 (unused bnb will be returned to the caller)
+// SwapBNBForExactTokens  swap bnb to bep20 (unused bnb will be returned to the caller)
 func (ea *ExtAcc) SwapBNBForExactTokens(nonce uint64, contAddr *common.Address, amountIn *big.Int, amountOut *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
@@ -314,6 +314,29 @@ func (ea *ExtAcc) SwapBNBForExactTokens(nonce uint64, contAddr *common.Address, 
 	transactOpts.Value = amountIn
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
 	tx, err := instance.SwapETHForExactTokens(transactOpts, amountOut, path, *toAddr, deadline)
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("swap bnb for exact tokens: %s\n", hash.Hex())
+	return &hash, nil
+}
+
+// SwapExactTokensForBNB swap bep20   to bnb (unused bnb will be returned to the caller)
+func (ea *ExtAcc) SwapExactTokensForBNB(nonce uint64, contAddr *common.Address, amountIn *big.Int, amountOut *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
+	gasLimit := uint64(5e6)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+	//
+	instance, err := V2router.NewV2router(*contAddr, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	//transactOpts.Value = amountIn
+	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
+	tx, err := instance.SwapExactTokensForETH(transactOpts, amountIn, big.NewInt(0), path, *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
