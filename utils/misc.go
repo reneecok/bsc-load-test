@@ -23,18 +23,21 @@ const (
 	// for bep20 contract
 	SendBEP20 = "SendBEP20"
 	// for uniswap contract
-	AddLiquidity = "AddLiquidity"
-	RemoveLiquidity = "RemoveLiquidity"
+	AddLiquidity             = "AddLiquidity"
+	RemoveLiquidity          = "RemoveLiquidity"
 	SwapExactTokensForTokens = "SwapExactTokensForTokens"
-	SwapBNBForExactTokens = "SwapBNBForExactTokens"
+	SwapBNBForExactTokens    = "SwapBNBForExactTokens"
 	// for wbnb contract
-	DepositWBNB = "DepositWBNB"
-	WithdrawWBNB = "WithdrawWBNB"
+	DepositWBNB          = "DepositWBNB"
+	WithdrawWBNB         = "WithdrawWBNB"
+	ERC721MintOrTransfer = "ERC721MintOrTransfer"
+	ERC721Mint           = "ERC721Mint"
+	ERC721Transfer       = "ERC721Transfer"
 )
 
 type Scenario struct {
-	Name    string
-	Weight  int
+	Name   string
+	Weight int
 }
 
 func RandScenario(scenarios []Scenario) *Scenario {
@@ -117,7 +120,7 @@ func LoadHexKeys(fullpath string, numOfKeys int) [][]string {
 			break
 		}
 		line := scanner.Text()
-		if index != 0 && index % batchSize == 0 {
+		if index != 0 && index%batchSize == 0 {
 			batches = append(batches, lines)
 			lines = make([]string, 0, batchSize)
 		}

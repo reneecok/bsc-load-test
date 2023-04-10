@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"crypto/ecdsa"
+	"fmt"
 	"log"
 	"math"
 	"math/big"
@@ -11,6 +12,7 @@ import (
 	"bsc-load-test/contracts/V2factory"
 	"bsc-load-test/contracts/V2router"
 	"bsc-load-test/contracts/bep20"
+	"bsc-load-test/contracts/erc721"
 	"bsc-load-test/contracts/wbnb"
 
 	"github.com/ethereum/go-ethereum"
@@ -389,11 +391,112 @@ func (ea *ExtAcc) WithdrawWBNB(nonce uint64, contAddr *common.Address, amount *b
 }
 
 func (ea *ExtAcc) SimulateContCall(contAddr *common.Address, transactOpts *bind.TransactOpts, trans *types.Transaction) ([]byte, error) {
-	msg := ethereum.CallMsg{*ea.Addr, contAddr, transactOpts.GasLimit, transactOpts.GasPrice, transactOpts.Value, trans.Data(), nil}
+	msg := ethereum.CallMsg{From: *ea.Addr, To: contAddr, Gas: transactOpts.GasLimit, GasPrice: transactOpts.GasPrice,
+		GasFeeCap: transactOpts.GasFeeCap, GasTipCap: transactOpts.GasTipCap, Value: transactOpts.Value,
+		Data: trans.Data()}
 	ctx := context.Background()
 	res, err := ea.Client.CallContract(ctx, msg, nil)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
+}
+
+// erc721
+func (ea *ExtAcc) MintERC721(nonce uint64, contractAddress common.Address) (*common.Hash, error) {
+	log.Println("erc721 mint action")
+	instance, err := erc721.NewErc721(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(8e6)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := instance.SafeMint(transactOpts, *ea.Addr)
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("mint NFT721: %s\n", hash.Hex())
+	return &hash, nil
+}
+
+// erc721
+func (ea *ExtAcc) ApproveERC721(nonce uint64, contractAddress common.Address, spenderAddr *common.Address, amount *big.Int) (*common.Hash, error) {
+	gasLimit := uint64(3e5)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+	//
+	instance, err := erc721.NewErc721(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := instance.Approve(transactOpts, *spenderAddr, amount)
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("Approve NFT721: %s\n", hash.Hex())
+	return &hash, nil
+}
+
+// erc721
+func (ea *ExtAcc) TransferERC721(nonce uint64, contractAddress common.Address, toAddr *common.Address, TokenID *big.Int) (*common.Hash, error) {
+	log.Println("erc721 transfer action")
+	gasLimit := uint64(3e5)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+	instance, err := erc721.NewErc721(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := instance.SafeTransferFrom(transactOpts, *ea.Addr, *toAddr, TokenID)
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("transfer nft: %s\n", hash.Hex())
+	return &hash, nil
+}
+
+// erc721
+func (ea *ExtAcc) Get721TotalSupply(contractAddress common.Address) (*big.Int, error) {
+	instance, err := erc721.NewErc721(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	totalSupply, err := instance.TotalSupply(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return totalSupply, nil
+}
+
+// erc721
+func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int, error) {
+	instance, err := erc721.NewErc721(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	balance, err := instance.BalanceOf(&bind.CallOpts{}, *ea.Addr)
+	if err != nil {
+		return nil, err
+	}
+	balance.Uint64()
+	if balance.Uint64() == 0 {
+		err = fmt.Errorf("balance is 0")
+		return nil, err
+	}
+	tokenID, err := instance.TokenOfOwnerByIndex(&bind.CallOpts{}, *ea.Addr, big.NewInt(0))
+	if err != nil {
+		return nil, err
+	}
+	return tokenID, nil
 }

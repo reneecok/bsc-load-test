@@ -13,10 +13,8 @@ import (
 	"time"
 
 	"bsc-load-test/utils"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-
 	"go.uber.org/ratelimit"
 )
 
@@ -49,9 +47,12 @@ var uniswapFactoryHex *string
 var uniswapFactoryAddr common.Address
 var uniswapRouterHex *string
 var uniswapRouterAddr common.Address
+var erc721Hex *string
+var erc721Addr common.Address
 
 var runTestAcc *bool
 var scenarios []utils.Scenario
+var erc721MintOrTransfer []utils.Scenario
 
 var tps *int
 var sec *int
@@ -65,6 +66,7 @@ var debug *bool
 var distributeAmount *big.Int
 var liquidityInitAmount *big.Int
 var liquidityTestAmount *big.Int
+var erc721InitToken int
 
 func init() {
 	//
@@ -83,6 +85,7 @@ func init() {
 	wbnbHex = flag.String("wbnbHex", "", "wbnbHex")
 	uniswapFactoryHex = flag.String("uniswapFactoryHex", "", "uniswapFactoryHex")
 	uniswapRouterHex = flag.String("uniswapRouterHex", "", "uniswapRouterHex")
+	erc721Hex = flag.String("erc721Hex", "", "erc721Hex")
 	runTestAcc = flag.Bool("runTestAcc", false, "runTestAcc")
 	tps = flag.Int("tps", 1, "tps")
 	sec = flag.Int("sec", 10, "sec")
@@ -113,18 +116,24 @@ func init() {
 
 	uniswapFactoryAddr = common.HexToAddress(*uniswapFactoryHex)
 	uniswapRouterAddr = common.HexToAddress(*uniswapRouterHex)
+	erc721Addr = common.HexToAddress(*erc721Hex)
 
 	scenarios = []utils.Scenario{
-		utils.Scenario{utils.SendBNB, 5},
-		utils.Scenario{utils.SendBEP20, 5},
-		utils.Scenario{utils.AddLiquidity, 5},
-		utils.Scenario{utils.RemoveLiquidity, 5},
-		utils.Scenario{utils.SwapExactTokensForTokens, 35},
-		utils.Scenario{utils.SwapBNBForExactTokens, 35},
-		utils.Scenario{utils.DepositWBNB, 5},
-		utils.Scenario{utils.WithdrawWBNB, 5},
+		{utils.SendBNB, 0},
+		{utils.SendBEP20, 0},
+		{utils.AddLiquidity, 0},
+		{utils.RemoveLiquidity, 0},
+		{utils.SwapExactTokensForTokens, 0},
+		{utils.SwapBNBForExactTokens, 0},
+		{utils.DepositWBNB, 0},
+		{utils.WithdrawWBNB, 0},
+		{utils.ERC721MintOrTransfer, 100},
 	}
-
+	erc721MintOrTransfer = []utils.Scenario{
+		{utils.ERC721Mint, 1},
+		{utils.ERC721Transfer, 9},
+	}
+	erc721InitToken = 2
 	distributeAmount = big.NewInt(1e18)
 	liquidityInitAmount = new(big.Int)
 	liquidityTestAmount = new(big.Int)
@@ -198,53 +207,80 @@ func main() {
 		//
 		eaSlice := load(clients)
 		//
-		for i, v := range eaSlice {
-			limiter.Take()
-			//
-			_, err := root.SendBNB(nonce, v.Addr, distributeAmount)
-			if err != nil {
-				log.Println("error: send bnb:", err)
-				continue
-			}
-			nonce++
-			//
-			if *bep20Hex != "" {
-				//
-				index := i % len(bep20AddrsA)
-				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
-				if err != nil {
-					log.Println("error: send bep20:", err)
-					continue
-				}
-				nonce++
-				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
-				if err != nil {
-					log.Println("error: send bep20:", err)
-					continue
-				}
-				nonce++
-			}
-		}
-		time.Sleep(10 * time.Second)
-		//
-		if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
-			//
+		//for i, v := range eaSlice {
+		//	limiter.Take()
+		//	//
+		//	_, err = root.SendBNB(nonce, v.Addr, distributeAmount)
+		//	if err != nil {
+		//		log.Println("error: send bnb:", err)
+		//		continue
+		//	}
+		//	nonce++
+		//	//
+		//	if *bep20Hex != "" {
+		//		//
+		//		index := i % len(bep20AddrsA)
+		//		//
+		//		_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
+		//		if err != nil {
+		//			log.Println("error: send bep20:", err)
+		//			continue
+		//		}
+		//		nonce++
+		//		//
+		//		_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
+		//		if err != nil {
+		//			log.Println("error: send bep20:", err)
+		//			continue
+		//		}
+		//		nonce++
+		//	}
+		//}
+		//time.Sleep(10 * time.Second)
+		////
+		//if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
+		//	//
+		//	var wg sync.WaitGroup
+		//	wg.Add(len(eaSlice))
+		//	for i, v := range eaSlice {
+		//		limiter.Take()
+		//		go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
+		//			defer wg.Done()
+		//			//
+		//			index := i % len(bep20AddrsA)
+		//			err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
+		//			if err != nil {
+		//				log.Println("error: initUniswapByAcc:", err)
+		//				return
+		//			}
+		//		}(&wg, i, v)
+		//	}
+		//	wg.Wait()
+		//}
+		//time.Sleep(10 * time.Second)
+
+		if *erc721Hex != "" {
 			var wg sync.WaitGroup
-			wg.Add(len(eaSlice))
-			for i, v := range eaSlice {
+			var totalAccountSlice []utils.ExtAcc
+			for i := 0; i < erc721InitToken; i++ {
+				totalAccountSlice = append(totalAccountSlice, eaSlice...)
+			}
+			wg.Add(len(totalAccountSlice))
+			for _, v := range totalAccountSlice {
 				limiter.Take()
-				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
+				go func(wg *sync.WaitGroup, v utils.ExtAcc) {
 					defer wg.Done()
-					//
-					index := i % len(bep20AddrsA)
-					err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
+					nonce, err = v.Client.PendingNonceAt(context.Background(), *v.Addr)
 					if err != nil {
-						log.Println("error: initUniswapByAcc:", err)
+						log.Println("error: get nonce in mint erc721:", err)
 						return
 					}
-				}(&wg, i, v)
+					_, err = v.MintERC721(nonce, erc721Addr)
+					if err != nil {
+						log.Println("error: mint erc721:", err)
+						return
+					}
+				}(&wg, v)
 			}
 			wg.Wait()
 		}
@@ -454,11 +490,12 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 	i := 0
 	for {
 		limiter.Take()
+		randomAddress := eaSlice[rand.Intn(len(eaSlice))]
 		if *expired {
 			break
 		}
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, i int, ea *utils.ExtAcc) {
+		go func(wg *sync.WaitGroup, i int, ea, randomAddress *utils.ExtAcc) {
 			defer wg.Done()
 			//
 			scenario := utils.RandScenario(scenarios)
@@ -475,22 +512,20 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 			//
 			var hash *common.Hash
 			//
-			if scenario.Name == utils.SendBNB {
-				//
+			switch scenario.Name {
+			case utils.SendBNB:
 				hash, err = ea.SendBNB(nonce, eaSlice[j].Addr, liquidityTestAmount)
 				if err != nil {
 					log.Println("error: send bnb:", err)
 					return
 				}
-			} else if scenario.Name == utils.SendBEP20 {
-				//
+			case utils.SendBEP20:
 				hash, err = ea.SendBEP20(nonce, &bep20AddrsA[index], eaSlice[j].Addr, liquidityTestAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
 					return
 				}
-			} else if scenario.Name == utils.AddLiquidity {
-				//
+			case utils.AddLiquidity:
 				r := rand.Intn(10000) % 2
 				if r == 0 {
 					// bep20-bep20
@@ -532,8 +567,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 						return
 					}
 				}
-			} else if scenario.Name == utils.RemoveLiquidity {
-				//
+			case utils.RemoveLiquidity:
 				r := rand.Intn(10000) % 2
 				if r == 0 {
 					// bep20-bep20
@@ -591,8 +625,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 						return
 					}
 				}
-			} else if scenario.Name == utils.SwapExactTokensForTokens {
-				//
+			case utils.SwapExactTokensForTokens:
 				path := make([]common.Address, 0, 2)
 				r := rand.Intn(10000) % 2
 				if r == 0 {
@@ -608,8 +641,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 					log.Println("error: swap exact tokens for tokens:", err, path[0].Hex(), path[1].Hex())
 					return
 				}
-			} else if scenario.Name == utils.SwapBNBForExactTokens {
-				//
+			case utils.SwapBNBForExactTokens:
 				// 50% wbnb will be returned
 				actualAmount := new(big.Int)
 				actualAmount.Div(liquidityTestAmount, big.NewInt(2))
@@ -634,20 +666,48 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 						return
 					}
 				}
-				//
-			} else if scenario.Name == utils.DepositWBNB {
-				//
+			case utils.DepositWBNB:
 				hash, err = ea.DepositWBNB(nonce, &wbnbAddr, liquidityTestAmount)
 				if err != nil {
 					log.Println("error: deposit wbnb:", err)
 					return
 				}
-			} else if scenario.Name == utils.WithdrawWBNB {
-				//
+			case utils.WithdrawWBNB:
 				hash, err = ea.WithdrawWBNB(nonce, &wbnbAddr, liquidityTestAmount)
 				if err != nil {
 					log.Println("error: withdraw wbnb:", err)
 					return
+				}
+			case utils.ERC721MintOrTransfer:
+				subScenario := utils.RandScenario(erc721MintOrTransfer)
+				if subScenario.Name == utils.ERC721Mint {
+					hash, err = ea.MintERC721(nonce, erc721Addr)
+					if err != nil {
+						log.Println("error: erc721Mint:", err)
+						return
+					}
+				} else {
+					tokenID, err := ea.GetOneERC721TokenID(erc721Addr)
+					if err != nil {
+						log.Println("error: transfer tokenID:", err)
+						hash, err = ea.MintERC721(nonce, erc721Addr)
+						if err != nil {
+							log.Println("error: erc721Mint:", err)
+							return
+						}
+					} else {
+						_, err = ea.ApproveERC721(nonce, erc721Addr, randomAddress.Addr, tokenID)
+						if err != nil {
+							log.Println("error: approve erc721: ", err, randomAddress.Addr.String())
+							return
+						}
+						nonce++
+						hash, err = ea.TransferERC721(nonce, erc721Addr, randomAddress.Addr, tokenID)
+						if err != nil {
+							log.Println("error: transfer erc721: ", err)
+							return
+						}
+					}
 				}
 			}
 			//
@@ -655,7 +715,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 			results = append(results, hash)
 			m.Unlock()
 			//
-		}(&wg, i, &eaSlice[i])
+		}(&wg, i, &eaSlice[i], &randomAddress)
 		i++
 		if i == len(eaSlice) {
 			i = 0
