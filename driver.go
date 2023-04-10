@@ -207,57 +207,57 @@ func main() {
 		//
 		eaSlice := load(clients)
 		//
-		//for i, v := range eaSlice {
-		//	limiter.Take()
-		//	//
-		//	_, err = root.SendBNB(nonce, v.Addr, distributeAmount)
-		//	if err != nil {
-		//		log.Println("error: send bnb:", err)
-		//		continue
-		//	}
-		//	nonce++
-		//	//
-		//	if *bep20Hex != "" {
-		//		//
-		//		index := i % len(bep20AddrsA)
-		//		//
-		//		_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
-		//		if err != nil {
-		//			log.Println("error: send bep20:", err)
-		//			continue
-		//		}
-		//		nonce++
-		//		//
-		//		_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
-		//		if err != nil {
-		//			log.Println("error: send bep20:", err)
-		//			continue
-		//		}
-		//		nonce++
-		//	}
-		//}
-		//time.Sleep(10 * time.Second)
-		////
-		//if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
-		//	//
-		//	var wg sync.WaitGroup
-		//	wg.Add(len(eaSlice))
-		//	for i, v := range eaSlice {
-		//		limiter.Take()
-		//		go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
-		//			defer wg.Done()
-		//			//
-		//			index := i % len(bep20AddrsA)
-		//			err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
-		//			if err != nil {
-		//				log.Println("error: initUniswapByAcc:", err)
-		//				return
-		//			}
-		//		}(&wg, i, v)
-		//	}
-		//	wg.Wait()
-		//}
-		//time.Sleep(10 * time.Second)
+		for i, v := range eaSlice {
+			limiter.Take()
+			//
+			_, err = root.SendBNB(nonce, v.Addr, distributeAmount)
+			if err != nil {
+				log.Println("error: send bnb:", err)
+				continue
+			}
+			nonce++
+			//
+			if *bep20Hex != "" {
+				//
+				index := i % len(bep20AddrsA)
+				//
+				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
+				if err != nil {
+					log.Println("error: send bep20:", err)
+					continue
+				}
+				nonce++
+				//
+				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
+				if err != nil {
+					log.Println("error: send bep20:", err)
+					continue
+				}
+				nonce++
+			}
+		}
+		time.Sleep(10 * time.Second)
+		//
+		if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
+			//
+			var wg sync.WaitGroup
+			wg.Add(len(eaSlice))
+			for i, v := range eaSlice {
+				limiter.Take()
+				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
+					defer wg.Done()
+					//
+					index := i % len(bep20AddrsA)
+					err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
+					if err != nil {
+						log.Println("error: initUniswapByAcc:", err)
+						return
+					}
+				}(&wg, i, v)
+			}
+			wg.Wait()
+		}
+		time.Sleep(10 * time.Second)
 
 		if *erc721Hex != "" {
 			var wg sync.WaitGroup
