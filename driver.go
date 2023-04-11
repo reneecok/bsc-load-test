@@ -47,12 +47,13 @@ var uniswapFactoryHex *string
 var uniswapFactoryAddr common.Address
 var uniswapRouterHex *string
 var uniswapRouterAddr common.Address
-var erc721Hex *string
-var erc721Addr common.Address
+var erc721Hex, erc1155Hex *string
+var erc721Addr, erc1155Addr common.Address
 
 var runTestAcc *bool
 var scenarios []utils.Scenario
 var erc721MintOrTransfer []utils.Scenario
+var erc1155MintOrBurnOrTransfer []utils.Scenario
 
 var tps *int
 var sec *int
@@ -66,7 +67,9 @@ var debug *bool
 var distributeAmount *big.Int
 var liquidityInitAmount *big.Int
 var liquidityTestAmount *big.Int
-var erc721InitToken int
+var erc721InitTokenNumber int
+var erc1155InitTokenTypeNumber, erc1155InitTokenNumber int64
+var erc1155TokenIDSlice []*big.Int
 
 func init() {
 	//
@@ -86,6 +89,7 @@ func init() {
 	uniswapFactoryHex = flag.String("uniswapFactoryHex", "", "uniswapFactoryHex")
 	uniswapRouterHex = flag.String("uniswapRouterHex", "", "uniswapRouterHex")
 	erc721Hex = flag.String("erc721Hex", "", "erc721Hex")
+	erc1155Hex = flag.String("erc1155Hex", "", "erc1155Hex")
 	runTestAcc = flag.Bool("runTestAcc", false, "runTestAcc")
 	tps = flag.Int("tps", 1, "tps")
 	sec = flag.Int("sec", 10, "sec")
@@ -113,10 +117,10 @@ func init() {
 	}
 
 	wbnbAddr = common.HexToAddress(*wbnbHex)
-
 	uniswapFactoryAddr = common.HexToAddress(*uniswapFactoryHex)
 	uniswapRouterAddr = common.HexToAddress(*uniswapRouterHex)
 	erc721Addr = common.HexToAddress(*erc721Hex)
+	erc1155Addr = common.HexToAddress(*erc1155Hex)
 
 	scenarios = []utils.Scenario{
 		{utils.SendBNB, 0},
@@ -127,18 +131,29 @@ func init() {
 		{utils.SwapBNBForExactTokens, 0},
 		{utils.DepositWBNB, 0},
 		{utils.WithdrawWBNB, 0},
-		{utils.ERC721MintOrTransfer, 100},
+		{utils.ERC721MintOrTransfer, 0},
+		{utils.ERC1155MintOrBurnOrTransfer, 100},
 	}
 	erc721MintOrTransfer = []utils.Scenario{
 		{utils.ERC721Mint, 1},
 		{utils.ERC721Transfer, 9},
 	}
-	erc721InitToken = 2
+	erc1155MintOrBurnOrTransfer = []utils.Scenario{
+		{utils.ERC1155Mint, 6},
+		{utils.ERC1155Burn, 3},
+		{utils.ERC1155Transfer, 1},
+	}
+	erc721InitTokenNumber = 2
+	erc1155InitTokenTypeNumber = 30
+	erc1155InitTokenNumber = 5
 	distributeAmount = big.NewInt(1e18)
 	liquidityInitAmount = new(big.Int)
 	liquidityTestAmount = new(big.Int)
 	liquidityInitAmount.Div(distributeAmount, big.NewInt(4))
 	liquidityTestAmount.Div(liquidityInitAmount, big.NewInt(2.5e12))
+	for i := int64(0); i < erc1155InitTokenTypeNumber; i++ {
+		erc1155TokenIDSlice = append(erc1155TokenIDSlice, big.NewInt(i))
+	}
 
 	log.Println("distributeAmount:", distributeAmount)
 	log.Println("liquidityInitAmount:", liquidityInitAmount)
@@ -176,7 +191,7 @@ func main() {
 	}
 	//
 	if *bep20Hex != "" {
-		for i, _ := range bep20AddrsA {
+		for i := range bep20AddrsA {
 			_, err = root.GetBEP20Balance(&bep20AddrsA[i])
 			if err != nil {
 				panic(err)
@@ -262,7 +277,7 @@ func main() {
 		if *erc721Hex != "" {
 			var wg sync.WaitGroup
 			var totalAccountSlice []utils.ExtAcc
-			for i := 0; i < erc721InitToken; i++ {
+			for i := 0; i < erc721InitTokenNumber; i++ {
 				totalAccountSlice = append(totalAccountSlice, eaSlice...)
 			}
 			wg.Add(len(totalAccountSlice))
@@ -278,6 +293,32 @@ func main() {
 					_, err = v.MintERC721(nonce, erc721Addr)
 					if err != nil {
 						log.Println("error: mint erc721:", err)
+						return
+					}
+				}(&wg, v)
+			}
+			wg.Wait()
+		}
+
+		if *erc1155Hex != "" {
+			var wg sync.WaitGroup
+			wg.Add(len(eaSlice))
+			var tokenAmountSlice []*big.Int
+			for range erc1155TokenIDSlice {
+				tokenAmountSlice = append(tokenAmountSlice, big.NewInt(erc1155InitTokenNumber))
+			}
+			for _, v := range eaSlice {
+				limiter.Take()
+				go func(wg *sync.WaitGroup, v utils.ExtAcc) {
+					defer wg.Done()
+					nonce, err = v.Client.PendingNonceAt(context.Background(), *v.Addr)
+					if err != nil {
+						log.Println("error: get nonce in mint erc1155:", err)
+						return
+					}
+					_, err = v.MintBatchERC1155(nonce, erc1155Addr, erc1155TokenIDSlice, tokenAmountSlice)
+					if err != nil {
+						log.Println("error: mint batch erc1155:", err)
 						return
 					}
 				}(&wg, v)
@@ -332,8 +373,7 @@ func main() {
 			go func(wg *sync.WaitGroup, ea utils.ExtAcc) {
 				defer wg.Done()
 				//
-				nonce, err := ea.Client.PendingNonceAt(
-					context.Background(), *ea.Addr)
+				nonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
 				if err != nil {
 					log.Println("error: nonce:", err)
 					return
@@ -689,7 +729,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				} else {
 					tokenID, err := ea.GetOneERC721TokenID(erc721Addr)
 					if err != nil {
-						log.Println("error: transfer tokenID:", err)
+						log.Println("error: get erc721 tokenID:", err)
 						hash, err = ea.MintERC721(nonce, erc721Addr)
 						if err != nil {
 							log.Println("error: erc721Mint:", err)
@@ -705,6 +745,50 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 						hash, err = ea.TransferERC721(nonce, erc721Addr, randomAddress.Addr, tokenID)
 						if err != nil {
 							log.Println("error: transfer erc721: ", err)
+							return
+						}
+					}
+				}
+			case utils.ERC1155MintOrBurnOrTransfer:
+				switch utils.RandScenario(erc1155MintOrBurnOrTransfer).Name {
+				case utils.ERC1155Mint:
+					randomTokenID := rand.Int63n(erc1155InitTokenTypeNumber)
+					hash, err = ea.MintERC1155(nonce, erc1155Addr, big.NewInt(randomTokenID), big.NewInt(erc1155InitTokenNumber))
+					if err != nil {
+						log.Println("error: erc1155 Mint:", err)
+						return
+					}
+				case utils.ERC1155Burn:
+					id, err := ea.GetOneERC1155TokenID(erc1155Addr, erc1155TokenIDSlice)
+					if err != nil {
+						log.Println("error: get erc1155 tokenID:", err)
+						randomTokenID := rand.Int63n(erc1155InitTokenTypeNumber)
+						hash, err = ea.MintERC1155(nonce, erc1155Addr, big.NewInt(randomTokenID), big.NewInt(erc1155InitTokenNumber))
+						if err != nil {
+							log.Println("error: erc1155 Mint:", err)
+							return
+						}
+					} else {
+						hash, err = ea.BurnERC1155(nonce, erc1155Addr, id, big.NewInt(erc1155InitTokenNumber))
+						if err != nil {
+							log.Println("error: erc1155 Burn:", err)
+							return
+						}
+					}
+				case utils.ERC1155Transfer:
+					id, err := ea.GetOneERC1155TokenID(erc1155Addr, erc1155TokenIDSlice)
+					if err != nil {
+						log.Println("error: get erc1155 tokenID:", err)
+						randomTokenID := rand.Int63n(erc1155InitTokenTypeNumber)
+						hash, err = ea.MintERC1155(nonce, erc1155Addr, big.NewInt(randomTokenID), big.NewInt(erc1155InitTokenNumber))
+						if err != nil {
+							log.Println("error: erc1155 Mint:", err)
+							return
+						}
+					} else {
+						hash, err = ea.TransERC1155(nonce, erc1155Addr, *randomAddress.Addr, id, big.NewInt(erc1155InitTokenNumber))
+						if err != nil {
+							log.Println("error: erc1155 Trans:", err)
 							return
 						}
 					}

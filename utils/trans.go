@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bsc-load-test/contracts/erc1155"
 	"context"
 	"crypto/ecdsa"
 	"fmt"
@@ -419,9 +420,9 @@ func (ea *ExtAcc) MintERC721(nonce uint64, contractAddress common.Address) (*com
 	if err != nil {
 		return nil, err
 	}
-	hash := tx.Hash()
-	log.Printf("mint NFT721: %s\n", hash.Hex())
-	return &hash, nil
+	txHash := tx.Hash()
+	log.Printf("mint NFT721: %s\n", txHash.Hex())
+	return &txHash, nil
 }
 
 // erc721
@@ -489,7 +490,6 @@ func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int,
 	if err != nil {
 		return nil, err
 	}
-	balance.Uint64()
 	if balance.Uint64() == 0 {
 		err = fmt.Errorf("balance is 0")
 		return nil, err
@@ -499,4 +499,118 @@ func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int,
 		return nil, err
 	}
 	return tokenID, nil
+}
+
+// erc1155
+func (ea *ExtAcc) MintERC1155(nonce uint64, contractAddress common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+	log.Println("erc1155 mint action")
+	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(8e6)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := instance.Mint(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
+	if err != nil {
+		return nil, err
+	}
+	txHash := tx.Hash()
+	log.Printf("Mint NFT1155: %s\n", txHash.Hex())
+	return &txHash, nil
+}
+
+func (ea *ExtAcc) MintBatchERC1155(nonce uint64, contractAddress common.Address, tokenID, amount []*big.Int) (*common.Hash, error) {
+	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	gasLimit := uint64(8e6)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := instance.MintBatch(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
+	if err != nil {
+		return nil, err
+	}
+	txHash := tx.Hash()
+	log.Printf("MintBatch NFT1155: %s\n", txHash.Hex())
+	return &txHash, nil
+}
+
+func (ea *ExtAcc) BurnERC1155(nonce uint64, contractAddress common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+	log.Println("erc1155 burn action")
+	gasLimit := uint64(3e5)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := instance.Burn(transactOpts, *ea.Addr, tokenID, amount)
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("Burn NFT1155: %s\n", hash.Hex())
+	return &hash, nil
+}
+
+func (ea *ExtAcc) GetOneERC1155TokenID(contractAddress common.Address, tokenIDSlice []*big.Int) (*big.Int, error) {
+	var accounts []common.Address
+	var isEmpty = true
+	var tokenID *big.Int
+
+	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+	for range tokenIDSlice {
+		accounts = append(accounts, *ea.Addr)
+	}
+	balance, err := instance.BalanceOfBatch(&bind.CallOpts{}, accounts, tokenIDSlice)
+	if err != nil {
+		return nil, err
+	}
+	for i := range balance {
+		if balance[i].Cmp(big.NewInt(0)) != 0 {
+			isEmpty = false
+			tokenID = tokenIDSlice[i]
+			break
+		}
+	}
+	if isEmpty {
+		err = fmt.Errorf("balance is 0")
+		return nil, err
+	}
+	return tokenID, nil
+}
+
+// erc1155
+func (ea *ExtAcc) TransERC1155(nonce uint64, contractAddress common.Address, toAddr common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+	log.Println("erc1155 trans action")
+	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	gasLimit := uint64(6e5)
+	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := instance.SafeTransferFrom(transactOpts, *ea.Addr, toAddr, tokenID, amount, []byte{0x00})
+	if err != nil {
+		return nil, err
+	}
+	hash := tx.Hash()
+	log.Printf("Trans NFT1155: %s\n", hash.Hex())
+	return &hash, nil
 }

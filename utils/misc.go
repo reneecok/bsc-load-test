@@ -28,11 +28,16 @@ const (
 	SwapExactTokensForTokens = "SwapExactTokensForTokens"
 	SwapBNBForExactTokens    = "SwapBNBForExactTokens"
 	// for wbnb contract
-	DepositWBNB          = "DepositWBNB"
-	WithdrawWBNB         = "WithdrawWBNB"
-	ERC721MintOrTransfer = "ERC721MintOrTransfer"
-	ERC721Mint           = "ERC721Mint"
-	ERC721Transfer       = "ERC721Transfer"
+	DepositWBNB  = "DepositWBNB"
+	WithdrawWBNB = "WithdrawWBNB"
+	// for NFT contract
+	ERC721MintOrTransfer        = "ERC721MintOrTransfer"
+	ERC721Mint                  = "ERC721Mint"
+	ERC721Transfer              = "ERC721Transfer"
+	ERC1155MintOrBurnOrTransfer = "ERC1155MintOrBurnOrTransfer"
+	ERC1155Mint                 = "ERC1155Mint"
+	ERC1155Burn                 = "ERC1155Burn"
+	ERC1155Transfer             = "ERC1155Transfer"
 )
 
 type Scenario struct {
