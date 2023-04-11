@@ -47,7 +47,7 @@ func RandScenario(scenarios []Scenario) *Scenario {
 		totalWeight += v.Weight
 	}
 	//
-	r := rand.Intn(totalWeight)
+	r := rand.Intn(totalWeight) + 1
 	for _, v := range scenarios {
 		r -= v.Weight
 		if r <= 0 {
