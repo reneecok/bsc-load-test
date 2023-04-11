@@ -108,7 +108,7 @@ async function main() {
 
     console.log("\nCopy Command Line Params From Here: \n")
     console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
-        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + "-erc721Hex=" + nft721ContractAddress)
+        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + " -erc721Hex=" + nft721ContractAddress)
 }
 
 main()
