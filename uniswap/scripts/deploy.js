@@ -16,6 +16,7 @@ async function main() {
     let WBNB = await ethers.getContractFactory('WBNB');
     let Router = await ethers.getContractFactory('UniswapV2Router02');
     let Nft721 = await ethers.getContractFactory('MyToken')
+    let Nft1155 = await ethers.getContractFactory('TERC1155')
 
     let addresses = [];
     for (let i = 0; i < numOfContract; i++) {
@@ -92,6 +93,11 @@ async function main() {
     console.log('nft721: ' + nft721.address);
     contractAddress['Nft721'] = nft721.address
 
+    let nft1155 = await Nft1155.deploy()
+    await nft1155.deployed()
+    console.log('nft1155: ' + nft1155.address);
+    contractAddress['Nft1155'] = nft1155.address
+
     let filepath = path.join(path.dirname(__filename), '../contracts.json');
     utils.writeJsonObject(filepath, contractAddress);
 
@@ -105,10 +111,12 @@ async function main() {
     let wbnbContractAddress = contractAddress['WBNB'];
     let factoryContractAddress = contractAddress['factory'];
     let nft721ContractAddress = contractAddress['Nft721'];
+    let nft1155ContractAddress = contractAddress['Nft1155'];
 
     console.log("\nCopy Command Line Params From Here: \n")
     console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
-        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + " -erc721Hex=" + nft721ContractAddress)
+        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + " -erc721Hex=" + nft721ContractAddress + " " +
+        "-erc1155Hex=" + nft1155ContractAddress)
 }
 
 main()

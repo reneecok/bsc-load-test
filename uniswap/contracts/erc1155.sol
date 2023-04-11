@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 contract TERC1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
-    constructor() ERC1155("tERC1155","TK") {}
+    constructor() ERC1155("tERC1155") {}
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
