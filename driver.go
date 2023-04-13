@@ -19,15 +19,20 @@ import (
 	"go.uber.org/ratelimit"
 )
 
+var txfile *string
+var valiUrl *string
+
 var endpoints *string
 var fullnodes []string
 
 var roothexkey *string
 var roothexaddr *string
 var hexkeyfile *string
+var slaveUserHexkeyFile *string
 
 var usersCreated *int
 var usersLoaded *int
+var slaveUserLoaded *int
 
 var randTestAcc *bool
 var initTestAcc *bool
@@ -68,6 +73,7 @@ var debug *bool
 var distributeAmount *big.Int
 var liquidityInitAmount *big.Int
 var liquidityTestAmount *big.Int
+var slaveDistributeAmount *big.Int
 var erc721InitTokenNumber int
 var erc1155InitTokenTypeNumber, erc1155InitTokenNumber int64
 var erc1155TokenIDSlice []*big.Int
@@ -218,15 +224,25 @@ func main() {
 	log.Println("root: nonce -", nonce)
 	//
 	if *initTestAcc {
+		startTime := time.Now()
 		//
 		limiter := ratelimit.New(*tps)
 		//
-		eaSlice := load(clients)
-		//
-		for i, v := range eaSlice {
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
+		slaveEaSlice := load(clients, slaveUserHexkeyFile, slaveUserLoaded)
+		copyAmount := big.NewInt(distributeAmount.Int64())
+		copyAmount.Mul(copyAmount, big.NewInt(int64(*usersLoaded)+int64(*usersLoaded/100)))
+		copyAmount.Div(copyAmount, big.NewInt(int64(*slaveUserLoaded)))
+		slaveDistributeAmount := copyAmount
+		//slaveDistributeAmount := big.NewInt(1e18).Mul(big.NewInt(1e18), big.NewInt(1.01e3))
+		log.Println("slaveDistributeAmount:", slaveDistributeAmount)
+		time.Sleep(10 * time.Second)
+
+		//send coin to root accounts
+		for i, v := range slaveEaSlice {
 			limiter.Take()
 			//
-			_, err = root.SendBNB(nonce, v.Addr, distributeAmount)
+			_, err := root.SendBNB(nonce, v.Addr, slaveDistributeAmount)
 			if err != nil {
 				log.Println("error: send bnb:", err)
 				continue
@@ -237,14 +253,14 @@ func main() {
 				//
 				index := i % len(bep20AddrsA)
 				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
+				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, slaveDistributeAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
 					continue
 				}
 				nonce++
 				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
+				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, slaveDistributeAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
 					continue
@@ -254,6 +270,63 @@ func main() {
 		}
 		time.Sleep(10 * time.Second)
 
+		// // send coin to final accounts
+		var slaveWg sync.WaitGroup
+		slaveWg.Add(len(slaveEaSlice))
+		for i, v := range slaveEaSlice {
+			limiter.Take()
+			go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
+				defer wg.Done()
+				cap := *usersLoaded / *slaveUserLoaded
+
+				nonce, err := ea.Client.PendingNonceAt(
+					context.Background(), *ea.Addr)
+				if err != nil {
+					panic(err)
+				}
+				log.Printf("slave %d: nonce - %d \n", i, nonce)
+
+				for debug, addr := range eaSlice[i*cap : (i+1)*cap] {
+					limiter.Take()
+					//
+					_, err := ea.SendBNB(nonce, addr.Addr, distributeAmount)
+					if err != nil {
+						log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, debug, distributeAmount.Int64(), err)
+						continue
+					}
+					nonce++
+					//
+					if *bep20Hex != "" {
+						//
+						index := i % len(bep20AddrsA)
+
+						//
+						_, err = ea.SendBEP20(nonce, &bep20AddrsA[index], addr.Addr, distributeAmount)
+						if err != nil {
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, debug, distributeAmount.Int64(), err)
+							continue
+						}
+
+						nonce++
+						//
+						_, err = ea.SendBEP20(nonce, &bep20AddrsB[index], addr.Addr, distributeAmount)
+						if err != nil {
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, debug, distributeAmount.Int64(), err)
+							continue
+						}
+						nonce++
+					}
+				}
+			}(&slaveWg, i, v)
+		}
+		slaveWg.Wait()
+		endTime := time.Now()
+		times := endTime.Sub(startTime).Seconds()
+
+		log.Printf("init_before %f seconds \n", times)
+
+		time.Sleep(10 * time.Second)
+		//
 		if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
 			//
 			var wg sync.WaitGroup
@@ -263,7 +336,9 @@ func main() {
 				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
 					defer wg.Done()
 					//
-					index := i % len(bep20AddrsA)
+					cap := *usersLoaded / *slaveUserLoaded
+					//
+					index := (i / cap) % len(bep20AddrsA)
 					err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
 					if err != nil {
 						log.Println("error: initUniswapByAcc:", err)
@@ -273,7 +348,6 @@ func main() {
 			}
 			wg.Wait()
 		}
-		time.Sleep(10 * time.Second)
 
 		if *erc721Hex != "" {
 			var wg sync.WaitGroup
@@ -326,6 +400,12 @@ func main() {
 			}
 			wg.Wait()
 		}
+
+		endTime = time.Now()
+		times = endTime.Sub(startTime).Seconds()
+
+		log.Printf("init_acc_time %f seconds \n", times)
+
 		return
 	}
 	//
@@ -548,8 +628,10 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				return
 			}
 			//
+			cap := *usersLoaded / *slaveUserLoaded
+			//
 			j := rand.Intn(*usersLoaded)
-			index := i % len(bep20AddrsA)
+			index := (i / cap) % len(bep20AddrsA)
 			//
 			var hash *common.Hash
 			//
