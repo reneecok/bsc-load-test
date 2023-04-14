@@ -132,15 +132,15 @@ func init() {
 	erc1155Addr = common.HexToAddress(*erc1155Hex)
 
 	scenarios = []utils.Scenario{
-		{utils.SendBNB, 0},
-		{utils.SendBEP20, 0},
-		{utils.AddLiquidity, 0},
-		{utils.RemoveLiquidity, 0},
-		{utils.SwapExactTokensForTokens, 0},
-		{utils.SwapBNBForExactTokens, 0},
-		{utils.DepositWBNB, 0},
-		{utils.WithdrawWBNB, 0},
-		{utils.ERC721MintOrTransfer, 0},
+		{utils.SendBNB, 1},
+		{utils.SendBEP20, 1},
+		{utils.AddLiquidity, 1},
+		{utils.RemoveLiquidity, 1},
+		{utils.SwapExactTokensForTokens, 1},
+		{utils.SwapBNBForExactTokens, 1},
+		{utils.DepositWBNB, 1},
+		{utils.WithdrawWBNB, 1},
+		{utils.ERC721MintOrTransfer, 1},
 		{utils.ERC1155MintOrBurnOrTransfer, 100},
 	}
 	erc721MintOrTransfer = []utils.Scenario{
