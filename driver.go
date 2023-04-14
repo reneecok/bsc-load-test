@@ -86,8 +86,10 @@ func init() {
 	roothexkey = flag.String("roothexkey", "", "roothexkey")
 	roothexaddr = flag.String("roothexaddr", "", "roothexaddr")
 	hexkeyfile = flag.String("hexkeyfile", "", "hexkeyfile")
+	slaveUserHexkeyFile = flag.String("slaveUserHexkeyFile", "", "slaveUserHexkeyFile")
 	usersCreated = flag.Int("usersCreated", 50000, "usersCreated")
 	usersLoaded = flag.Int("usersLoaded", 50000, "usersLoaded")
+	slaveUserLoaded = flag.Int("slaveUserLoaded", 100, "slaveUserLoaded")
 	randTestAcc = flag.Bool("randTestAcc", false, "randTestAcc")
 	initTestAcc = flag.Bool("initTestAcc", false, "initTestAcc")
 	resetTestAcc = flag.Bool("resetTestAcc", false, "resetTestAcc")
@@ -414,7 +416,7 @@ func main() {
 		limiter := ratelimit.New(*tps)
 		//
 		var wg sync.WaitGroup
-		eaSlice := load(clients)
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
 		//
 		if *wbnbHex != "" {
 			wg.Add(len(eaSlice))
@@ -485,7 +487,7 @@ func main() {
 	}
 	//
 	if *runTestAcc {
-		eaSlice := load(clients)
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
 		block, err := root.Client.BlockByNumber(
 			context.Background(), nil)
 		if err != nil {
@@ -516,7 +518,7 @@ func cleanup(clients []*ethclient.Client) {
 	}
 }
 
-func load(clients []*ethclient.Client) []utils.ExtAcc {
+func load(clients []*ethclient.Client, hexkeyfile *string, usersLoaded *int) []utils.ExtAcc {
 	batches := utils.LoadHexKeys(*hexkeyfile, *usersLoaded)
 	eaSlice := make([]utils.ExtAcc, 0, *usersLoaded)
 	//
