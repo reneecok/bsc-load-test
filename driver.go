@@ -25,9 +25,11 @@ var fullnodes []string
 var roothexkey *string
 var roothexaddr *string
 var hexkeyfile *string
+var slaveUserHexkeyFile *string
 
 var usersCreated *int
 var usersLoaded *int
+var slaveUserLoaded *int
 
 var randTestAcc *bool
 var initTestAcc *bool
@@ -68,6 +70,7 @@ var debug *bool
 var distributeAmount *big.Int
 var liquidityInitAmount *big.Int
 var liquidityTestAmount *big.Int
+var slaveDistributeAmount *big.Int
 var erc721InitTokenNumber int
 var erc1155InitTokenTypeNumber, erc1155InitTokenNumber int64
 var erc1155TokenIDSlice []*big.Int
@@ -80,8 +83,10 @@ func init() {
 	roothexkey = flag.String("roothexkey", "", "roothexkey")
 	roothexaddr = flag.String("roothexaddr", "", "roothexaddr")
 	hexkeyfile = flag.String("hexkeyfile", "", "hexkeyfile")
+	slaveUserHexkeyFile = flag.String("slaveUserHexkeyFile", "", "slaveUserHexkeyFile")
 	usersCreated = flag.Int("usersCreated", 50000, "usersCreated")
 	usersLoaded = flag.Int("usersLoaded", 50000, "usersLoaded")
+	slaveUserLoaded = flag.Int("slaveUserLoaded", 100, "slaveUserLoaded")
 	randTestAcc = flag.Bool("randTestAcc", false, "randTestAcc")
 	initTestAcc = flag.Bool("initTestAcc", false, "initTestAcc")
 	resetTestAcc = flag.Bool("resetTestAcc", false, "resetTestAcc")
@@ -124,16 +129,16 @@ func init() {
 	erc1155Addr = common.HexToAddress(*erc1155Hex)
 
 	scenarios = []utils.Scenario{
-		{utils.SendBNB, 0},
-		{utils.SendBEP20, 0},
-		{utils.AddLiquidity, 0},
-		{utils.RemoveLiquidity, 0},
-		{utils.SwapExactTokensForTokens, 0},
-		{utils.SwapBNBForExactTokens, 0},
-		{utils.DepositWBNB, 0},
-		{utils.WithdrawWBNB, 0},
-		{utils.ERC721MintOrTransfer, 0},
-		{utils.ERC1155MintOrBurnOrTransfer, 100},
+		{utils.SendBNB, 1},
+		{utils.SendBEP20, 1},
+		{utils.AddLiquidity, 1},
+		{utils.RemoveLiquidity, 1},
+		{utils.SwapExactTokensForTokens, 1},
+		{utils.SwapBNBForExactTokens, 1},
+		{utils.DepositWBNB, 1},
+		{utils.WithdrawWBNB, 1},
+		{utils.ERC721MintOrTransfer, 1},
+		{utils.ERC1155MintOrBurnOrTransfer, 1},
 	}
 	erc721MintOrTransfer = []utils.Scenario{
 		{utils.ERC721Mint, 1},
@@ -179,8 +184,7 @@ func main() {
 	}
 	defer cleanup(clients)
 	//
-	root, err := utils.NewExtAcc(clients[0],
-		*roothexkey, *roothexaddr)
+	root, err := utils.NewExtAcc(clients[0], *roothexkey, *roothexaddr)
 	if err != nil {
 		panic(err)
 	}
@@ -204,29 +208,37 @@ func main() {
 		}
 	}
 	if *wbnbHex != "" {
-		_, err := root.GetBEP20Balance(&wbnbAddr)
+		_, err = root.GetBEP20Balance(&wbnbAddr)
 		if err != nil {
 			panic(err)
 		}
 	}
 	//
-	nonce, err := root.Client.PendingNonceAt(
-		context.Background(), *root.Addr)
+	nonce, err := root.Client.PendingNonceAt(context.Background(), *root.Addr)
 	if err != nil {
 		panic(err)
 	}
 	log.Println("root: nonce -", nonce)
 	//
 	if *initTestAcc {
+		startTime := time.Now()
 		//
 		limiter := ratelimit.New(*tps)
 		//
-		eaSlice := load(clients)
-		//
-		for i, v := range eaSlice {
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
+		slaveEaSlice := load(clients, slaveUserHexkeyFile, slaveUserLoaded)
+		copyAmount := big.NewInt(distributeAmount.Int64())
+		copyAmount.Mul(copyAmount, big.NewInt(int64(*usersLoaded)+int64(*usersLoaded/100)))
+		copyAmount.Div(copyAmount, big.NewInt(int64(*slaveUserLoaded)))
+		slaveDistributeAmount = copyAmount
+		log.Println("slaveDistributeAmount:", slaveDistributeAmount)
+		time.Sleep(10 * time.Second)
+
+		//send coin to root accounts
+		for i, v := range slaveEaSlice {
 			limiter.Take()
 			//
-			_, err = root.SendBNB(nonce, v.Addr, distributeAmount)
+			_, err = root.SendBNB(nonce, v.Addr, slaveDistributeAmount)
 			if err != nil {
 				log.Println("error: send bnb:", err)
 				continue
@@ -237,14 +249,14 @@ func main() {
 				//
 				index := i % len(bep20AddrsA)
 				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, distributeAmount)
+				_, err = root.SendBEP20(nonce, &bep20AddrsA[index], v.Addr, slaveDistributeAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
 					continue
 				}
 				nonce++
 				//
-				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, distributeAmount)
+				_, err = root.SendBEP20(nonce, &bep20AddrsB[index], v.Addr, slaveDistributeAmount)
 				if err != nil {
 					log.Println("error: send bep20:", err)
 					continue
@@ -254,6 +266,59 @@ func main() {
 		}
 		time.Sleep(10 * time.Second)
 
+		// send coin to final accounts
+		var slaveWg sync.WaitGroup
+		slaveWg.Add(len(slaveEaSlice))
+		for i, v := range slaveEaSlice {
+			limiter.Take()
+			go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
+				defer wg.Done()
+				capNumber := *usersLoaded / *slaveUserLoaded
+
+				slaveNonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
+				if err != nil {
+					panic(err)
+				}
+				log.Printf("slave %d: nonce - %d \n", i, slaveNonce)
+
+				for batchIndex, addr := range eaSlice[i*capNumber : (i+1)*capNumber] {
+					limiter.Take()
+					//
+					_, err = ea.SendBNB(slaveNonce, addr.Addr, distributeAmount)
+					if err != nil {
+						log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, batchIndex, distributeAmount.Int64(), err)
+						continue
+					}
+					slaveNonce++
+					//
+					if *bep20Hex != "" {
+						index := i % len(bep20AddrsA)
+						//
+						_, err = ea.SendBEP20(slaveNonce, &bep20AddrsA[index], addr.Addr, distributeAmount)
+						if err != nil {
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, distributeAmount.Int64(), err)
+							continue
+						}
+
+						slaveNonce++
+						//
+						_, err = ea.SendBEP20(slaveNonce, &bep20AddrsB[index], addr.Addr, distributeAmount)
+						if err != nil {
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, distributeAmount.Int64(), err)
+							continue
+						}
+						slaveNonce++
+					}
+				}
+			}(&slaveWg, i, v)
+		}
+		slaveWg.Wait()
+		endTime := time.Now()
+		times := endTime.Sub(startTime).Seconds()
+		log.Printf("init_before %f seconds \n", times)
+
+		time.Sleep(10 * time.Second)
+		//
 		if *wbnbHex != "" && *uniswapFactoryHex != "" && *uniswapRouterHex != "" {
 			//
 			var wg sync.WaitGroup
@@ -263,7 +328,9 @@ func main() {
 				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
 					defer wg.Done()
 					//
-					index := i % len(bep20AddrsA)
+					capNumber := *usersLoaded / *slaveUserLoaded
+					//
+					index := (i / capNumber) % len(bep20AddrsA)
 					err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
 					if err != nil {
 						log.Println("error: initUniswapByAcc:", err)
@@ -273,7 +340,6 @@ func main() {
 			}
 			wg.Wait()
 		}
-		time.Sleep(10 * time.Second)
 
 		if *erc721Hex != "" {
 			var wg sync.WaitGroup
@@ -326,6 +392,10 @@ func main() {
 			}
 			wg.Wait()
 		}
+
+		endTime = time.Now()
+		times = endTime.Sub(startTime).Seconds()
+		log.Printf("init_acc_time %f seconds \n", times)
 		return
 	}
 	//
@@ -334,7 +404,7 @@ func main() {
 		limiter := ratelimit.New(*tps)
 		//
 		var wg sync.WaitGroup
-		eaSlice := load(clients)
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
 		//
 		if *wbnbHex != "" {
 			wg.Add(len(eaSlice))
@@ -405,7 +475,7 @@ func main() {
 	}
 	//
 	if *runTestAcc {
-		eaSlice := load(clients)
+		eaSlice := load(clients, hexkeyfile, usersLoaded)
 		block, err := root.Client.BlockByNumber(
 			context.Background(), nil)
 		if err != nil {
@@ -436,7 +506,7 @@ func cleanup(clients []*ethclient.Client) {
 	}
 }
 
-func load(clients []*ethclient.Client) []utils.ExtAcc {
+func load(clients []*ethclient.Client, hexkeyfile *string, usersLoaded *int) []utils.ExtAcc {
 	batches := utils.LoadHexKeys(*hexkeyfile, *usersLoaded)
 	eaSlice := make([]utils.ExtAcc, 0, *usersLoaded)
 	//
@@ -541,15 +611,16 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 			//
 			scenario := utils.RandScenario(scenarios)
 			//
-			nonce, err := ea.Client.PendingNonceAt(
-				context.Background(), *ea.Addr)
+			nonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
 			if err != nil {
 				log.Println("error: nonce:", err)
 				return
 			}
 			//
+			capNumber := *usersLoaded / *slaveUserLoaded
+			//
 			j := rand.Intn(*usersLoaded)
-			index := i % len(bep20AddrsA)
+			index := (i / capNumber) % len(bep20AddrsA)
 			//
 			var hash *common.Hash
 			//
@@ -570,7 +641,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				r := rand.Intn(10000) % 2
 				if r == 0 {
 					// bep20-bep20
-					_, err := ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
+					_, err = ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve bep20:", err)
 						return
@@ -590,7 +661,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				}
 				if r == 1 {
 					// wbnb-bep20
-					_, err := ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, distributeAmount)
+					_, err = ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve wbnb:", err)
 						return
