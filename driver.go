@@ -184,8 +184,7 @@ func main() {
 	}
 	defer cleanup(clients)
 	//
-	root, err := utils.NewExtAcc(clients[0],
-		*roothexkey, *roothexaddr)
+	root, err := utils.NewExtAcc(clients[0], *roothexkey, *roothexaddr)
 	if err != nil {
 		panic(err)
 	}
@@ -209,14 +208,13 @@ func main() {
 		}
 	}
 	if *wbnbHex != "" {
-		_, err := root.GetBEP20Balance(&wbnbAddr)
+		_, err = root.GetBEP20Balance(&wbnbAddr)
 		if err != nil {
 			panic(err)
 		}
 	}
 	//
-	nonce, err := root.Client.PendingNonceAt(
-		context.Background(), *root.Addr)
+	nonce, err := root.Client.PendingNonceAt(context.Background(), *root.Addr)
 	if err != nil {
 		panic(err)
 	}
@@ -232,8 +230,7 @@ func main() {
 		copyAmount := big.NewInt(distributeAmount.Int64())
 		copyAmount.Mul(copyAmount, big.NewInt(int64(*usersLoaded)+int64(*usersLoaded/100)))
 		copyAmount.Div(copyAmount, big.NewInt(int64(*slaveUserLoaded)))
-		slaveDistributeAmount := copyAmount
-		//slaveDistributeAmount := big.NewInt(1e18).Mul(big.NewInt(1e18), big.NewInt(1.01e3))
+		slaveDistributeAmount = copyAmount
 		log.Println("slaveDistributeAmount:", slaveDistributeAmount)
 		time.Sleep(10 * time.Second)
 
@@ -241,7 +238,7 @@ func main() {
 		for i, v := range slaveEaSlice {
 			limiter.Take()
 			//
-			_, err := root.SendBNB(nonce, v.Addr, slaveDistributeAmount)
+			_, err = root.SendBNB(nonce, v.Addr, slaveDistributeAmount)
 			if err != nil {
 				log.Println("error: send bnb:", err)
 				continue
@@ -269,51 +266,48 @@ func main() {
 		}
 		time.Sleep(10 * time.Second)
 
-		// // send coin to final accounts
+		// send coin to final accounts
 		var slaveWg sync.WaitGroup
 		slaveWg.Add(len(slaveEaSlice))
 		for i, v := range slaveEaSlice {
 			limiter.Take()
 			go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
 				defer wg.Done()
-				cap := *usersLoaded / *slaveUserLoaded
+				capNumber := *usersLoaded / *slaveUserLoaded
 
-				nonce, err := ea.Client.PendingNonceAt(
-					context.Background(), *ea.Addr)
+				slaveNonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
 				if err != nil {
 					panic(err)
 				}
-				log.Printf("slave %d: nonce - %d \n", i, nonce)
+				log.Printf("slave %d: nonce - %d \n", i, slaveNonce)
 
-				for debug, addr := range eaSlice[i*cap : (i+1)*cap] {
+				for batchIndex, addr := range eaSlice[i*capNumber : (i+1)*capNumber] {
 					limiter.Take()
 					//
-					_, err := ea.SendBNB(nonce, addr.Addr, distributeAmount)
+					_, err = ea.SendBNB(slaveNonce, addr.Addr, distributeAmount)
 					if err != nil {
-						log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, debug, distributeAmount.Int64(), err)
+						log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, batchIndex, distributeAmount.Int64(), err)
 						continue
 					}
-					nonce++
+					slaveNonce++
 					//
 					if *bep20Hex != "" {
-						//
 						index := i % len(bep20AddrsA)
-
 						//
-						_, err = ea.SendBEP20(nonce, &bep20AddrsA[index], addr.Addr, distributeAmount)
+						_, err = ea.SendBEP20(slaveNonce, &bep20AddrsA[index], addr.Addr, distributeAmount)
 						if err != nil {
-							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, debug, distributeAmount.Int64(), err)
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, distributeAmount.Int64(), err)
 							continue
 						}
 
-						nonce++
+						slaveNonce++
 						//
-						_, err = ea.SendBEP20(nonce, &bep20AddrsB[index], addr.Addr, distributeAmount)
+						_, err = ea.SendBEP20(slaveNonce, &bep20AddrsB[index], addr.Addr, distributeAmount)
 						if err != nil {
-							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, debug, distributeAmount.Int64(), err)
+							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, distributeAmount.Int64(), err)
 							continue
 						}
-						nonce++
+						slaveNonce++
 					}
 				}
 			}(&slaveWg, i, v)
@@ -321,7 +315,6 @@ func main() {
 		slaveWg.Wait()
 		endTime := time.Now()
 		times := endTime.Sub(startTime).Seconds()
-
 		log.Printf("init_before %f seconds \n", times)
 
 		time.Sleep(10 * time.Second)
@@ -335,9 +328,9 @@ func main() {
 				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
 					defer wg.Done()
 					//
-					cap := *usersLoaded / *slaveUserLoaded
+					capNumber := *usersLoaded / *slaveUserLoaded
 					//
-					index := (i / cap) % len(bep20AddrsA)
+					index := (i / capNumber) % len(bep20AddrsA)
 					err = initUniswapByAcc(&ea, &bep20AddrsA[index], &bep20AddrsB[index])
 					if err != nil {
 						log.Println("error: initUniswapByAcc:", err)
@@ -402,9 +395,7 @@ func main() {
 
 		endTime = time.Now()
 		times = endTime.Sub(startTime).Seconds()
-
 		log.Printf("init_acc_time %f seconds \n", times)
-
 		return
 	}
 	//
@@ -620,17 +611,16 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 			//
 			scenario := utils.RandScenario(scenarios)
 			//
-			nonce, err := ea.Client.PendingNonceAt(
-				context.Background(), *ea.Addr)
+			nonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
 			if err != nil {
 				log.Println("error: nonce:", err)
 				return
 			}
 			//
-			cap := *usersLoaded / *slaveUserLoaded
+			capNumber := *usersLoaded / *slaveUserLoaded
 			//
 			j := rand.Intn(*usersLoaded)
-			index := (i / cap) % len(bep20AddrsA)
+			index := (i / capNumber) % len(bep20AddrsA)
 			//
 			var hash *common.Hash
 			//
@@ -651,7 +641,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				r := rand.Intn(10000) % 2
 				if r == 0 {
 					// bep20-bep20
-					_, err := ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
+					_, err = ea.ApproveBEP20(nonce, &bep20AddrsA[index], &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve bep20:", err)
 						return
@@ -671,7 +661,7 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 				}
 				if r == 1 {
 					// wbnb-bep20
-					_, err := ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, distributeAmount)
+					_, err = ea.ApproveBEP20(nonce, &wbnbAddr, &uniswapRouterAddr, distributeAmount)
 					if err != nil {
 						log.Println("error: approve wbnb:", err)
 						return
