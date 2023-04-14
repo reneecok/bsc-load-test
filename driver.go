@@ -19,9 +19,6 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-var txfile *string
-var valiUrl *string
-
 var endpoints *string
 var fullnodes []string
 
@@ -141,7 +138,7 @@ func init() {
 		{utils.DepositWBNB, 1},
 		{utils.WithdrawWBNB, 1},
 		{utils.ERC721MintOrTransfer, 1},
-		{utils.ERC1155MintOrBurnOrTransfer, 100},
+		{utils.ERC1155MintOrBurnOrTransfer, 1},
 	}
 	erc721MintOrTransfer = []utils.Scenario{
 		{utils.ERC721Mint, 1},
