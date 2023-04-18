@@ -30,7 +30,6 @@ func InitAccount(clients []*ethclient.Client, nonce uint64, root utils.ExtAcc) {
 }
 
 func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSlice, slaveEaSlice []utils.ExtAcc) {
-
 	// send coin to root accounts
 	log.Println("init account: send coins to slave accounts.")
 	for i, v := range slaveEaSlice {
