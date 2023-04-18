@@ -5,13 +5,17 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func init() {
@@ -157,4 +161,38 @@ func SaveHash(fullpath string, results []*common.Hash) error {
 		panic(err.Error())
 	}
 	return nil
+}
+
+func Load(clients []*ethclient.Client, hexkeyfile string, usersLoaded *int) []ExtAcc {
+	batches := LoadHexKeys(hexkeyfile, *usersLoaded)
+	eaSlice := make([]ExtAcc, 0, *usersLoaded)
+	//
+	start := time.Now()
+	var wg sync.WaitGroup
+	var mx sync.Mutex
+	for i, batch := range batches {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, i int, batch []string) {
+			defer wg.Done()
+			log.Printf("processing ea batch [%d]", i)
+			for j, v := range batch {
+				client := clients[j%len(clients)]
+				items := strings.Split(v, ",")
+				ea, err := NewExtAcc(client, items[0], items[1])
+				if err != nil {
+					panic(err.Error())
+				}
+				mx.Lock()
+				eaSlice = append(eaSlice, *ea)
+				mx.Unlock()
+			}
+		}(&wg, i, batch)
+	}
+	wg.Wait()
+	//
+	end := time.Now()
+	log.Printf("ea load time (ms): %d",
+		end.Sub(start).Milliseconds())
+	log.Printf("%d loaded", len(eaSlice))
+	return eaSlice
 }
