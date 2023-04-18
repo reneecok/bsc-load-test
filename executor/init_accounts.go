@@ -13,6 +13,7 @@ import (
 	"go.uber.org/ratelimit"
 )
 
+// actully, the real tps when runing initTestAcc command is nearly 3*Tps ~ 8*Tps
 func InitAccount(clients []*ethclient.Client, nonce uint64, root utils.ExtAcc) {
 	limiter := ratelimit.New(utils.T_cfg.Tps)
 	//
