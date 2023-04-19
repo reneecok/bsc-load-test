@@ -5,8 +5,11 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"go.uber.org/ratelimit"
+	"log"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -157,4 +160,23 @@ func SaveHash(fullpath string, results []*common.Hash) error {
 		panic(err.Error())
 	}
 	return nil
+}
+
+func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
+	var wg sync.WaitGroup
+	var numberLock sync.Mutex
+	wg.Add(len(hashList))
+	limiter := ratelimit.New(tps)
+	txnFinishedNumber := 0
+	for i := 0; i < len(hashList); i++ {
+		limiter.Take()
+		receipt := root.GetReceipt(hashList[i], 10)
+		if receipt.Status == 1 {
+			numberLock.Lock()
+			txnFinishedNumber++
+			numberLock.Unlock()
+		}
+	}
+	log.Println("tx hash returned in load test: ", len(hashList))
+	log.Println("tx finished in load test: ", txnFinishedNumber)
 }
