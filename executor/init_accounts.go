@@ -15,9 +15,9 @@ import (
 
 // actully, the real tps when runing initTestAcc command is nearly 3*Tps ~ 8*Tps
 func InitAccount(clients []*ethclient.Client, nonce uint64, root utils.ExtAcc) {
+	eaSlice := utils.Load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
 	limiter := ratelimit.New(utils.T_cfg.Tps)
 	//
-	eaSlice := utils.Load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
 	slaveEaSlice := utils.Load(clients, utils.T_cfg.SlaveUserHexkeyFile, &utils.T_cfg.SlaveUserLoaded)
 	startTime := time.Now()
 	InitCoins(limiter, nonce, root, eaSlice, slaveEaSlice)

@@ -10,6 +10,7 @@ UsersCreated: 10
 UsersLoaded: 10
 SlaveUserLoaded: 5
 
+# contract addresses
 Bep20Hex: 0x33039D71eE5864a49423B9E7900Dfca1E2605D8D,0xda954E024261d46C21365050b9531C17CA5d28be
 WbnbHex: "0xc3CEbfB332Eb4263D7075d59189a2bD1D1797752"
 UniswapFactoryHex: "0x7Ae7cD31085B85038db3DE414E73B8161405FB80"
@@ -20,6 +21,7 @@ Erc1155Hex: "0x702f19C5e704Aa9b52059a1A90CF655dd857EecC"
 Tps: 2
 Sec: 100
 
+# set each type of scenario weights
 ScenariosYml:
   SendBNB: 1
   SendBEP20: 1
