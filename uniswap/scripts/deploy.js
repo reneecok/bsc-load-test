@@ -6,10 +6,13 @@ const fs = require('fs');
 const {parseDocument} = require('yaml');
 
 const utils = require('./utils.js');
+const { providers } = require('ethers');
 const numOfContract = process.env.NumberOfContract
 
 async function main() {
+
     const [owner] = await ethers.getSigners();
+    chainId = await owner.getChainId()
     let contractAddress = {};
     console.log('owner: ' + owner.address)
     // We get the contract to deploy bep20
@@ -128,6 +131,7 @@ async function main() {
     origin.set("UniswapRouterHex", routerContractAddress)
     origin.set("Erc721Hex", nft721ContractAddress)
     origin.set("Erc1155Hex", nft1155ContractAddress)
+    origin.set("ChainId", chainId)
 
     fs.writeFileSync('../config.yml', origin.toString());
 }
