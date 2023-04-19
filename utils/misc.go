@@ -216,3 +216,13 @@ func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
 	log.Println("tx hash returned in load test: ", len(hashList))
 	log.Println("tx finished in load test: ", txnFinishedNumber)
 }
+
+func SetupTimer(dur time.Duration) *bool {
+	t := time.NewTimer(dur)
+	expired := false
+	go func() {
+		<-t.C
+		expired = true
+	}()
+	return &expired
+}
