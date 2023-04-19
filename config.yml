@@ -1,20 +1,21 @@
 Endpoints: https://fncy-testnet-seed.fncy.world
+ChainId: 923018
 
 Roothexkey: 5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125
-Roothexaddr: 0x89E73303049EE32919903c09E8DE5629b84f59EB
+Roothexaddr: "0x89E73303049EE32919903c09E8DE5629b84f59EB"
 
 SlaveUserHexkeyFile: ./wallets/hexkey_1.csv
 Hexkeyfile: ./wallets/hexkey_0.csv
 UsersCreated: 10
 UsersLoaded: 10
-SlaveUserLoaded: 2
+SlaveUserLoaded: 5
 
-Bep20Hex: 0x8D929A0dC23AFF814117B4e7D783018E11fA4B65,0x654acEC030bf709B783E0aA80432F971Bf399a63
-WbnbHex: 0x6AcC1d1eAACD4B9D4c4F767fe92Be2F947904E21
-UniswapFactoryHex: 0xE3b43662EA55F6294298cCFECa3BdDB8651b05d9
-UniswapRouterHex: 0x2E12A3d0FEC1d8D8a0172c67ca404844F029B49f
-Erc721Hex: 0x3310951A1f558d2570258aa38b0228F830c82460
-Erc1155Hex: 0xAFb372aDFe0d42127522ba457268E25f6EA88e93
+Bep20Hex: 0x33039D71eE5864a49423B9E7900Dfca1E2605D8D,0xda954E024261d46C21365050b9531C17CA5d28be
+WbnbHex: "0xc3CEbfB332Eb4263D7075d59189a2bD1D1797752"
+UniswapFactoryHex: "0x7Ae7cD31085B85038db3DE414E73B8161405FB80"
+UniswapRouterHex: "0x142b66632795C2f9C440dD24c6D2e72D695af134"
+Erc721Hex: "0x88DAc576cFD182A0a7F47F773084f9e12fBc920e"
+Erc1155Hex: "0x702f19C5e704Aa9b52059a1A90CF655dd857EecC"
 
 Tps: 2
 Sec: 100
@@ -31,12 +32,12 @@ ScenariosYml:
   ERC721MintOrTransfer: 1
   ERC1155MintOrBurnOrTransfer: 1
 ERC721MintOrTransferScenariosYml:
-    ERC721Mint: 1
-    ERC721Transfer: 9
+  ERC721Mint: 1
+  ERC721Transfer: 9
 ERC1155MintOrBurnOrTransferScenariosYml:
-    ERC1155Mint: 6
-    ERC1155Burn: 3
-    ERC1155Transfer: 1
+  ERC1155Mint: 6
+  ERC1155Burn: 3
+  ERC1155Transfer: 1
 
 # distribute amount for every account, unit eth
 DistributeAmountYml: 1

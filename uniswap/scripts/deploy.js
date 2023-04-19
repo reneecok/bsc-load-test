@@ -2,12 +2,17 @@
 require('dotenv').config('../.env')
 const {ethers} = require('hardhat');
 const path = require('path');
+const fs = require('fs');
+const {parseDocument} = require('yaml');
 
 const utils = require('./utils.js');
+const { providers } = require('ethers');
 const numOfContract = process.env.NumberOfContract
 
 async function main() {
+
     const [owner] = await ethers.getSigners();
+    chainId = await owner.getChainId()
     let contractAddress = {};
     console.log('owner: ' + owner.address)
     // We get the contract to deploy bep20
@@ -117,6 +122,18 @@ async function main() {
     console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
         "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + " -erc721Hex=" + nft721ContractAddress + " " +
         "-erc1155Hex=" + nft1155ContractAddress)
+
+    let file = fs.readFileSync('../config.yml', 'utf-8');
+    const origin = parseDocument(file);
+    origin.set("Bep20Hex", printBep20Address)
+    origin.set("WbnbHex", wbnbContractAddress)
+    origin.set("UniswapFactoryHex", factoryContractAddress)
+    origin.set("UniswapRouterHex", routerContractAddress)
+    origin.set("Erc721Hex", nft721ContractAddress)
+    origin.set("Erc1155Hex", nft1155ContractAddress)
+    origin.set("ChainId", chainId)
+
+    fs.writeFileSync('../config.yml', origin.toString());
 }
 
 main()

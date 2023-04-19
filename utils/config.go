@@ -14,8 +14,10 @@ import (
 )
 
 type Config struct {
-	Endpoints string `yaml:"Endpoints"`
-	Fullnodes []string
+	Endpoints  string `yaml:"Endpoints"`
+	Fullnodes  []string
+	ChainIdYml int `yaml:"ChainId"`
+	ChainId    *big.Int
 
 	Roothexkey  string `yaml:"Roothexkey"`
 	Roothexaddr string `yaml:"Roothexaddr"`
@@ -91,6 +93,7 @@ func (cfg *Config) LoadYml(tps, sec *int) error {
 	}
 
 	cfg.Fullnodes = strings.Split(cfg.Endpoints, ",")
+	cfg.ChainId = big.NewInt(int64(cfg.ChainIdYml))
 	tokens := strings.Split(cfg.Bep20Hex, ",")
 
 	for _, v := range tokens[0 : len(tokens)/2] {

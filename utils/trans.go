@@ -134,12 +134,8 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 		return nil, err
 	}
 
-	chainID, err := ea.Client.ChainID(context.Background())
-	if err != nil {
-		return nil, err
-	}
 	//
-	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, chainID)
+	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +157,7 @@ func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int)
 		return nil, err
 	}
 	tx := types.NewTransaction(nonce, *toAddr, amount, gasLimit, gasPrice, nil)
-	chainId, err := ea.Client.ChainID(ctx)
-	if err != nil {
-		return nil, err
-	}
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), ea.Key)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(T_cfg.ChainId), ea.Key)
 	if err != nil {
 		return nil, err
 	}

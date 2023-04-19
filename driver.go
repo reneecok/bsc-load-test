@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"math/rand"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -110,184 +109,16 @@ func main() {
 	log.Println("root: nonce -", nonce)
 	//
 	if *initTestAcc {
-		startTime := time.Now()
-		//
-		limiter := ratelimit.New(utils.T_cfg.Tps)
-		//
-		eaSlice := load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
-		slaveEaSlice := load(clients, utils.T_cfg.SlaveUserHexkeyFile, &utils.T_cfg.SlaveUserLoaded)
-		time.Sleep(10 * time.Second)
-
-		//send coin to root accounts
-		for i, v := range slaveEaSlice {
-			limiter.Take()
-			//
-			if _, err = root.SendBNB(nonce, v.Addr, utils.T_cfg.SlaveDistributeAmount); err != nil {
-				log.Println("error: send bnb:", err)
-				continue
-			}
-			nonce++
-			//
-			if utils.T_cfg.Bep20Hex != "" {
-				//
-				index := i % len(utils.T_cfg.Bep20AddrsA)
-				//
-				_, err = root.SendBEP20(nonce, &utils.T_cfg.Bep20AddrsA[index], v.Addr, utils.T_cfg.SlaveDistributeAmount)
-				if err != nil {
-					log.Println("error: send bep20:", err)
-					continue
-				}
-				nonce++
-				//
-				_, err = root.SendBEP20(nonce, &utils.T_cfg.Bep20AddrsB[index], v.Addr, utils.T_cfg.SlaveDistributeAmount)
-				if err != nil {
-					log.Println("error: send bep20:", err)
-					continue
-				}
-				nonce++
-			}
-		}
-		time.Sleep(10 * time.Second)
-
-		// send coin to final accounts
-		var slaveWg sync.WaitGroup
-		slaveWg.Add(len(slaveEaSlice))
-		for i, v := range slaveEaSlice {
-			limiter.Take()
-			go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
-				defer wg.Done()
-				capNumber := utils.T_cfg.UsersLoaded / utils.T_cfg.SlaveUserLoaded
-
-				slaveNonce, err := ea.Client.PendingNonceAt(context.Background(), *ea.Addr)
-				if err != nil {
-					panic(err)
-				}
-				log.Printf("slave %d: nonce - %d \n", i, slaveNonce)
-
-				for batchIndex, addr := range eaSlice[i*capNumber : (i+1)*capNumber] {
-					limiter.Take()
-					//
-					_, err = ea.SendBNB(slaveNonce, addr.Addr, utils.T_cfg.DistributeAmount)
-					if err != nil {
-						log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
-						continue
-					}
-					slaveNonce++
-					//
-					if utils.T_cfg.Bep20Hex != "" {
-						index := i % len(utils.T_cfg.Bep20AddrsA)
-						//
-						_, err = ea.SendBEP20(slaveNonce, &utils.T_cfg.Bep20AddrsA[index], addr.Addr, utils.T_cfg.DistributeAmount)
-						if err != nil {
-							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
-							continue
-						}
-
-						slaveNonce++
-						//
-						_, err = ea.SendBEP20(slaveNonce, &utils.T_cfg.Bep20AddrsB[index], addr.Addr, utils.T_cfg.DistributeAmount)
-						if err != nil {
-							log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
-							continue
-						}
-						slaveNonce++
-					}
-				}
-			}(&slaveWg, i, v)
-		}
-		slaveWg.Wait()
-		endTime := time.Now()
-		times := endTime.Sub(startTime).Seconds()
-		log.Printf("init_before %f seconds \n", times)
-
-		time.Sleep(10 * time.Second)
-		//
-		if utils.T_cfg.WbnbHex != "" && utils.T_cfg.UniswapFactoryHex != "" && utils.T_cfg.UniswapRouterHex != "" {
-			//
-			var wg sync.WaitGroup
-			wg.Add(len(eaSlice))
-			for i, v := range eaSlice {
-				limiter.Take()
-				go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
-					defer wg.Done()
-					//
-					capNumber := utils.T_cfg.UsersLoaded / utils.T_cfg.SlaveUserLoaded
-					//
-					index := (i / capNumber) % len(utils.T_cfg.Bep20AddrsA)
-					err = initUniswapByAcc(&ea, &utils.T_cfg.Bep20AddrsA[index], &utils.T_cfg.Bep20AddrsB[index])
-					if err != nil {
-						log.Println("error: initUniswapByAcc:", err)
-						return
-					}
-				}(&wg, i, v)
-			}
-			wg.Wait()
-		}
-
-		if utils.T_cfg.Erc721Hex != "" {
-			var wg sync.WaitGroup
-			var totalAccountSlice []utils.ExtAcc
-			for i := 0; i < int(utils.T_cfg.Erc721InitTokenNumber); i++ {
-				totalAccountSlice = append(totalAccountSlice, eaSlice...)
-			}
-			wg.Add(len(totalAccountSlice))
-			for _, v := range totalAccountSlice {
-				limiter.Take()
-				go func(wg *sync.WaitGroup, v utils.ExtAcc) {
-					defer wg.Done()
-					nonce, err = v.Client.PendingNonceAt(context.Background(), *v.Addr)
-					if err != nil {
-						log.Println("error: get nonce in mint erc721:", err)
-						return
-					}
-					_, err = v.MintERC721(nonce, utils.T_cfg.Erc721Addr)
-					if err != nil {
-						log.Println("error: mint erc721:", err)
-						return
-					}
-				}(&wg, v)
-			}
-			wg.Wait()
-		}
-
-		if utils.T_cfg.Erc1155Hex != "" {
-			var wg sync.WaitGroup
-			wg.Add(len(eaSlice))
-			var tokenAmountSlice []*big.Int
-			for range utils.T_cfg.Erc1155TokenIDSlice {
-				tokenAmountSlice = append(tokenAmountSlice, big.NewInt(int64(utils.T_cfg.Erc1155InitTokenNumber)))
-			}
-			for _, v := range eaSlice {
-				limiter.Take()
-				go func(wg *sync.WaitGroup, v utils.ExtAcc) {
-					defer wg.Done()
-					nonce, err = v.Client.PendingNonceAt(context.Background(), *v.Addr)
-					if err != nil {
-						log.Println("error: get nonce in mint erc1155:", err)
-						return
-					}
-					_, err = v.MintBatchERC1155(nonce, utils.T_cfg.Erc1155Addr, utils.T_cfg.Erc1155TokenIDSlice, tokenAmountSlice)
-					if err != nil {
-						log.Println("error: mint batch erc1155:", err)
-						return
-					}
-				}(&wg, v)
-			}
-			wg.Wait()
-		}
-
-		endTime = time.Now()
-		times = endTime.Sub(startTime).Seconds()
-		log.Printf("init_acc_time %f seconds \n", times)
+		executor.InitAccount(clients, nonce, *root)
 		return
 	}
 	//
 	if *resetTestAcc {
 		//
-		limiter := ratelimit.New(*tps)
+		limiter := ratelimit.New(utils.T_cfg.Tps)
 		//
 		var wg sync.WaitGroup
-		eaSlice := load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
+		eaSlice := utils.Load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
 		//
 		if utils.T_cfg.WbnbHex != "" {
 			wg.Add(len(eaSlice))
@@ -358,7 +189,7 @@ func main() {
 	}
 	//
 	if *runTestAcc {
-		eaSlice := load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
+		eaSlice := utils.Load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
 		block, err := root.Client.BlockByNumber(
 			context.Background(), nil)
 		if err != nil {
@@ -387,87 +218,6 @@ func cleanup(clients []*ethclient.Client) {
 	for _, v := range clients {
 		v.Close()
 	}
-}
-
-func load(clients []*ethclient.Client, hexkeyfile string, usersLoaded *int) []utils.ExtAcc {
-	batches := utils.LoadHexKeys(hexkeyfile, *usersLoaded)
-	eaSlice := make([]utils.ExtAcc, 0, *usersLoaded)
-	//
-	start := time.Now()
-	var wg sync.WaitGroup
-	var mx sync.Mutex
-	for i, batch := range batches {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, i int, batch []string) {
-			defer wg.Done()
-			log.Printf("processing ea batch [%d]", i)
-			for j, v := range batch {
-				client := clients[j%len(clients)]
-				items := strings.Split(v, ",")
-				ea, err := utils.NewExtAcc(client, items[0], items[1])
-				if err != nil {
-					panic(err.Error())
-				}
-				mx.Lock()
-				eaSlice = append(eaSlice, *ea)
-				mx.Unlock()
-			}
-		}(&wg, i, batch)
-	}
-	wg.Wait()
-	//
-	end := time.Now()
-	log.Printf("ea load time (ms): %d",
-		end.Sub(start).Milliseconds())
-	log.Printf("%d loaded", len(eaSlice))
-	return eaSlice
-}
-
-func initUniswapByAcc(acc *utils.ExtAcc, tokenA *common.Address, tokenB *common.Address) error {
-	nonce, err := acc.Client.PendingNonceAt(context.Background(), *acc.Addr)
-	if err != nil {
-		log.Println("error: nonce:", err)
-		return err
-	}
-	wbnbAmount := new(big.Int)
-	// doubled, one for balance; the other for add liquidity
-	wbnbAmount.Mul(utils.T_cfg.LiquidityInitAmount, big.NewInt(2))
-	_, err = acc.DepositWBNB(nonce, &utils.T_cfg.WbnbAddr, wbnbAmount)
-	if err != nil {
-		log.Println("error: deposit wbnb: " + err.Error())
-		return err
-	}
-	nonce++
-	_, err = acc.ApproveBEP20(nonce, &utils.T_cfg.WbnbAddr, &utils.T_cfg.UniswapRouterAddr, utils.T_cfg.DistributeAmount)
-	if err != nil {
-		log.Println("error: approve wbnb: " + err.Error())
-		return err
-	}
-	nonce++
-	_, err = acc.ApproveBEP20(nonce, tokenA, &utils.T_cfg.UniswapRouterAddr, utils.T_cfg.DistributeAmount)
-	if err != nil {
-		log.Println("error: approve bep20: " + err.Error())
-		return err
-	}
-	nonce++
-	_, err = acc.ApproveBEP20(nonce, tokenB, &utils.T_cfg.UniswapRouterAddr, utils.T_cfg.DistributeAmount)
-	if err != nil {
-		log.Println("error: approve bep20: " + err.Error())
-		return err
-	}
-	nonce++
-	_, err = acc.AddLiquidity(nonce, &utils.T_cfg.UniswapRouterAddr, &utils.T_cfg.WbnbAddr, tokenA, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
-	if err != nil {
-		log.Println("error: add liquidity: " + err.Error())
-		return err
-	}
-	nonce++
-	_, err = acc.AddLiquidity(nonce, &utils.T_cfg.UniswapRouterAddr, tokenA, tokenB, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
-	if err != nil {
-		log.Println("error: add liquidity: " + err.Error())
-		return err
-	}
-	return nil
 }
 
 func exec(eaSlice []utils.ExtAcc) []*common.Hash {
