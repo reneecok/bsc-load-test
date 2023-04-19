@@ -6,8 +6,8 @@ Roothexaddr: "0x89E73303049EE32919903c09E8DE5629b84f59EB"
 
 SlaveUserHexkeyFile: ./wallets/hexkey_1.csv
 Hexkeyfile: ./wallets/hexkey_0.csv
-UsersCreated: 100
-UsersLoaded: 100
+UsersCreated: 10
+UsersLoaded: 10
 SlaveUserLoaded: 5
 
 Bep20Hex: 0x33039D71eE5864a49423B9E7900Dfca1E2605D8D,0xda954E024261d46C21365050b9531C17CA5d28be

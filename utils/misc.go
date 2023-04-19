@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/ratelimit"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -195,4 +197,22 @@ func Load(clients []*ethclient.Client, hexkeyfile string, usersLoaded *int) []Ex
 		end.Sub(start).Milliseconds())
 	log.Printf("%d loaded", len(eaSlice))
 	return eaSlice
+}
+func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
+	var wg sync.WaitGroup
+	var numberLock sync.Mutex
+	wg.Add(len(hashList))
+	limiter := ratelimit.New(tps)
+	txnFinishedNumber := 0
+	for i := 0; i < len(hashList); i++ {
+		limiter.Take()
+		receipt := root.GetReceipt(hashList[i], 10)
+		if receipt.Status == 1 {
+			numberLock.Lock()
+			txnFinishedNumber++
+			numberLock.Unlock()
+		}
+	}
+	log.Println("tx hash returned in load test: ", len(hashList))
+	log.Println("tx finished in load test: ", txnFinishedNumber)
 }
