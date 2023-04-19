@@ -486,14 +486,6 @@ func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int,
 	if err != nil {
 		return nil, err
 	}
-	balance, err := instance.BalanceOf(&bind.CallOpts{}, *ea.Addr)
-	if err != nil {
-		return nil, err
-	}
-	if balance.Uint64() == 0 {
-		err = fmt.Errorf("balance is 0")
-		return nil, err
-	}
 	tokenID, err := instance.TokenOfOwnerByIndex(&bind.CallOpts{}, *ea.Addr, big.NewInt(0))
 	if err != nil {
 		return nil, err
