@@ -103,8 +103,6 @@ async function main() {
     console.log('nft1155: ' + nft1155.address);
     contractAddress['Nft1155'] = nft1155.address
 
-    let filepath = path.join(path.dirname(__filename), '../contracts.json');
-    utils.writeJsonObject(filepath, contractAddress);
 
     // print out all params
     let ben20ContractAddress = contractAddress["bep20"];
