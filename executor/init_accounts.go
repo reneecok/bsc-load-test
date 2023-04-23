@@ -186,18 +186,14 @@ func initUniswapAndNftByAcc(acc *utils.ExtAcc, tokenA *common.Address, tokenB *c
 		return err
 	}
 	nonce++
-	_, err = acc.MintERC721(nonce, utils.T_cfg.Erc721Addr)
-	if err != nil {
-		log.Println("error: mint erc721:", err)
-		return err
+	for i := 0; int64(i) < utils.T_cfg.Erc721InitTokenNumber; i++ {
+		_, err = acc.MintERC721(nonce, utils.T_cfg.Erc721Addr)
+		if err != nil {
+			log.Println("error: mint erc721:", err)
+			return err
+		}
+		nonce++
 	}
-	nonce++
-	_, err = acc.MintERC721(nonce, utils.T_cfg.Erc721Addr)
-	if err != nil {
-		log.Println("error: mint erc721:", err)
-		return err
-	}
-	nonce++
 	_, err = acc.MintBatchERC1155(nonce, utils.T_cfg.Erc1155Addr, utils.T_cfg.Erc1155TokenIDSlice, tokenAmountSlice)
 	if err != nil {
 		log.Println("error: mint batch erc1155:", err)
