@@ -20,8 +20,8 @@ Hexkeyfile: ./wallets/hexkey_0.csv
 Tps: 2
 Sec: 100
 UsersCreated: 10
-UsersLoaded: 100000
-SlaveUserLoaded: 50
+UsersLoaded: 10
+SlaveUserLoaded: 5
 
 # set each type of scenario weights
 ScenariosYml:

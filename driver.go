@@ -79,7 +79,8 @@ func main() {
 		panic(err)
 	}
 	log.Println("root: nonce -", nonce)
-
+	// init contracts must be finished before root checker
+	utils.InitContacts(root)
 	preChecker(err, root)
 
 	if *initTestAcc {
