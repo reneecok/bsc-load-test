@@ -1,16 +1,8 @@
+# chain info updated by the deployment scripts
 Endpoints: https://fncy-testnet-seed.fncy.world
 ChainId: 923018
 
-Roothexkey: 5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125
-Roothexaddr: "0x89E73303049EE32919903c09E8DE5629b84f59EB"
-
-SlaveUserHexkeyFile: ./wallets/hexkey_1.csv
-Hexkeyfile: ./wallets/hexkey_0.csv
-UsersCreated: 10
-UsersLoaded: 10
-SlaveUserLoaded: 5
-
-# contract addresses
+# deployed contract addresses updated by the deployment scripts
 Bep20Hex: 0x08a72eC2eF8bd6a58631f7b55ec9e851924D64E5,0x39ea05EF06Ad2665101978B59c7083F08cB6D4d1
 WbnbHex: "0x676a2A659C4Cb2D9592A8436010e0c252ad8CF87"
 UniswapFactoryHex: "0xFB00164e156727DB1eD9DBc2315E22B469C43B10"
@@ -18,21 +10,31 @@ UniswapRouterHex: "0x06491392d61F8709793E3fA3F98E397f3B7a3C71"
 Erc721Hex: "0x568E21aCC07C934C72670a26499D4868B5F7416a"
 Erc1155Hex: "0xeB470C51caF110ff067B66487194f9f4926b137b"
 
+# root accounts & user accounts
+Roothexkey: 5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125
+Roothexaddr: "0x89E73303049EE32919903c09E8DE5629b84f59EB"
+SlaveUserHexkeyFile: ./wallets/hexkey_1.csv
+Hexkeyfile: ./wallets/hexkey_0.csv
+
+# test params
 Tps: 2
 Sec: 100
+UsersCreated: 10
+UsersLoaded: 10
+SlaveUserLoaded: 5
 
 # set each type of scenario weights
 ScenariosYml:
-  SendBNB: 1
-  SendBEP20: 1
-  AddLiquidity: 1
-  RemoveLiquidity: 1
-  SwapExactTokensForTokens: 1
-  SwapBNBForExactTokens: 1
-  DepositWBNB: 1
-  WithdrawWBNB: 1
-  ERC721MintOrTransfer: 1
-  ERC1155MintOrBurnOrTransfer: 1
+  SendBNB: 5
+  SendBEP20: 5
+  AddLiquidity: 5
+  RemoveLiquidity: 5
+  SwapExactTokensForTokens: 25
+  SwapBNBForExactTokens: 25
+  DepositWBNB: 5
+  WithdrawWBNB: 5
+  ERC721MintOrTransfer: 10
+  ERC1155MintOrBurnOrTransfer: 10
 ERC721MintOrTransferScenariosYml:
   ERC721Mint: 1
   ERC721Transfer: 9
@@ -43,6 +45,6 @@ ERC1155MintOrBurnOrTransferScenariosYml:
 
 # distribute amount for every account, unit eth
 DistributeAmountYml: 1
-Erc721InitTokenNumber: 2
-Erc1155InitTokenTypeNumber: 30
+Erc721InitTokenNumber: 3
+Erc1155InitTokenTypeNumber: 50
 Erc1155InitTokenNumber: 5

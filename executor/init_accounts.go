@@ -150,7 +150,7 @@ func initUniswapAndNftByAcc(acc *utils.ExtAcc, tokenA *common.Address, tokenB *c
 	wbnbAmount := new(big.Int)
 	// doubled, one for balance; the other for add liquidity
 	wbnbAmount.Mul(utils.T_cfg.LiquidityInitAmount, big.NewInt(2))
-	_, err = acc.DepositWBNB(nonce, &utils.T_cfg.WbnbAddr, wbnbAmount)
+	_, err = acc.DepositWBNB(nonce, wbnbAmount)
 	if err != nil {
 		log.Println("error: deposit wbnb: " + err.Error())
 		return err
@@ -174,27 +174,27 @@ func initUniswapAndNftByAcc(acc *utils.ExtAcc, tokenA *common.Address, tokenB *c
 		return err
 	}
 	nonce++
-	_, err = acc.AddLiquidity(nonce, &utils.T_cfg.UniswapRouterAddr, &utils.T_cfg.WbnbAddr, tokenA, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
+	_, err = acc.AddLiquidity(nonce, &utils.T_cfg.WbnbAddr, tokenA, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
 	if err != nil {
 		log.Println("error: add liquidity: " + err.Error())
 		return err
 	}
 	nonce++
-	_, err = acc.AddLiquidity(nonce, &utils.T_cfg.UniswapRouterAddr, tokenA, tokenB, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
+	_, err = acc.AddLiquidity(nonce, tokenA, tokenB, utils.T_cfg.LiquidityInitAmount, utils.T_cfg.LiquidityInitAmount, acc.Addr)
 	if err != nil {
 		log.Println("error: add liquidity: " + err.Error())
 		return err
 	}
 	nonce++
 	for i := 0; int64(i) < utils.T_cfg.Erc721InitTokenNumber; i++ {
-		_, err = acc.MintERC721(nonce, utils.T_cfg.Erc721Addr)
+		_, err = acc.MintERC721(nonce)
 		if err != nil {
 			log.Println("error: mint erc721:", err)
 			return err
 		}
 		nonce++
 	}
-	_, err = acc.MintBatchERC1155(nonce, utils.T_cfg.Erc1155Addr, utils.T_cfg.Erc1155TokenIDSlice, tokenAmountSlice)
+	_, err = acc.MintBatchERC1155(nonce, utils.T_cfg.Erc1155TokenIDSlice, tokenAmountSlice)
 	if err != nil {
 		log.Println("error: mint batch erc1155:", err)
 		return err

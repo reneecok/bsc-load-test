@@ -36,7 +36,7 @@ func ResetTest(clients []*ethclient.Client, nonce uint64, root *utils.ExtAcc) {
 					log.Printf("error: get wbnb balance: %s, %s", ea.Addr.Hex(), err)
 					return
 				}
-				_, err = ea.WithdrawWBNB(nonce, &utils.T_cfg.WbnbAddr, balance)
+				_, err = ea.WithdrawWBNB(nonce, balance)
 				if err != nil {
 					log.Println("error: withdraw wbnb:", err)
 					return

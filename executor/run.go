@@ -104,12 +104,12 @@ func exec(eaSlice []utils.ExtAcc) []*common.Hash {
 					return
 				}
 			case utils.DepositWBNB:
-				if hash, err = ea.DepositWBNB(nonce, &utils.T_cfg.WbnbAddr, utils.T_cfg.LiquidityTestAmount); err != nil {
+				if hash, err = ea.DepositWBNB(nonce, utils.T_cfg.LiquidityTestAmount); err != nil {
 					log.Println("error: deposit wbnb:", err)
 					return
 				}
 			case utils.WithdrawWBNB:
-				if hash, err = ea.WithdrawWBNB(nonce, &utils.T_cfg.WbnbAddr, utils.T_cfg.LiquidityTestAmount); err != nil {
+				if hash, err = ea.WithdrawWBNB(nonce, utils.T_cfg.LiquidityTestAmount); err != nil {
 					log.Println("error: withdraw wbnb:", err)
 					return
 				}

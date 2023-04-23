@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bsc-load-test/contracts/erc1155"
 	"context"
 	"crypto/ecdsa"
 	"fmt"
@@ -13,6 +12,7 @@ import (
 	"bsc-load-test/contracts/V2factory"
 	"bsc-load-test/contracts/V2router"
 	"bsc-load-test/contracts/bep20"
+	"bsc-load-test/contracts/erc1155"
 	"bsc-load-test/contracts/erc721"
 	"bsc-load-test/contracts/wbnb"
 
@@ -25,9 +25,14 @@ import (
 )
 
 type ExtAcc struct {
-	Client *ethclient.Client
-	Key    *ecdsa.PrivateKey
-	Addr   *common.Address
+	Client           *ethclient.Client
+	Key              *ecdsa.PrivateKey
+	Addr             *common.Address
+	V2RouterInstance *V2router.V2router
+	WbnbInstance     *wbnb.Wbnb
+	FactoryInstance  *V2factory.V2factory
+	Erc721Instance   *erc721.Erc721
+	Erc1155Instance  *erc1155.Erc1155
 }
 
 func NewExtAcc(client *ethclient.Client, hexkey string, hexaddr string) (*ExtAcc, error) {
@@ -36,7 +41,37 @@ func NewExtAcc(client *ethclient.Client, hexkey string, hexaddr string) (*ExtAcc
 		return nil, err
 	}
 	addr := common.HexToAddress(hexaddr)
-	return &ExtAcc{client, key, &addr}, nil
+	ex := &ExtAcc{Client: client,
+		Key:  key,
+		Addr: &addr,
+	}
+
+	if T_cfg.UniswapRouterAddr.String() != "" {
+		if ex.V2RouterInstance, err = V2router.NewV2router(T_cfg.UniswapRouterAddr, client); err != nil {
+			log.Println("error: create V2router instance failed")
+		}
+	}
+	if T_cfg.WbnbAddr.String() != "" {
+		if ex.WbnbInstance, err = wbnb.NewWbnb(T_cfg.WbnbAddr, client); err != nil {
+			log.Println("error: create wbnb instance failed")
+		}
+	}
+	if T_cfg.UniswapFactoryAddr.String() != "" {
+		if ex.FactoryInstance, err = V2factory.NewV2factory(T_cfg.UniswapFactoryAddr, client); err != nil {
+			log.Println("error: create factory instance failed")
+		}
+	}
+	if T_cfg.Erc721Addr.String() != "" {
+		if ex.Erc721Instance, err = erc721.NewErc721(T_cfg.Erc721Addr, client); err != nil {
+			log.Println("error: create erc721 instance failed")
+		}
+	}
+	if T_cfg.Erc1155Addr.String() != "" {
+		if ex.Erc1155Instance, err = erc1155.NewErc1155(T_cfg.Erc1155Addr, client); err != nil {
+			log.Println("error: create erc1155 instance failed")
+		}
+	}
+	return ex, nil
 }
 
 func (ea *ExtAcc) GetBNBBalance() (*big.Int, error) {
@@ -214,19 +249,15 @@ func (ea *ExtAcc) ApproveBEP20(nonce uint64, contAddr *common.Address, spenderAd
 }
 
 // uniswap
-func (ea *ExtAcc) AddLiquidity(nonce uint64, contAddr *common.Address, token1Addr *common.Address, token2Addr *common.Address, amountADesired *big.Int, amountBDesired *big.Int, toAddr *common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2Addr *common.Address, amountADesired *big.Int, amountBDesired *big.Int, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := V2router.NewV2router(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
+
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
-	tx, err := instance.AddLiquidity(transactOpts, *token1Addr, *token2Addr, amountADesired, amountBDesired, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
+	tx, err := ea.V2RouterInstance.AddLiquidity(transactOpts, *token1Addr, *token2Addr, amountADesired, amountBDesired, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -236,12 +267,8 @@ func (ea *ExtAcc) AddLiquidity(nonce uint64, contAddr *common.Address, token1Add
 }
 
 // uniswap
-func (ea *ExtAcc) GetPair(contAddr *common.Address, token1Addr *common.Address, token2Addr *common.Address) (*common.Address, error) {
-	instance, err := V2factory.NewV2factory(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	addr, err := instance.GetPair(&bind.CallOpts{}, *token1Addr, *token2Addr)
+func (ea *ExtAcc) GetPair(token1Addr *common.Address, token2Addr *common.Address) (*common.Address, error) {
+	addr, err := ea.FactoryInstance.GetPair(&bind.CallOpts{}, *token1Addr, *token2Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -250,19 +277,15 @@ func (ea *ExtAcc) GetPair(contAddr *common.Address, token1Addr *common.Address, 
 }
 
 // uniswap
-func (ea *ExtAcc) RemoveLiquidity(nonce uint64, contAddr *common.Address, token1Addr *common.Address, token2Addr *common.Address, liquidity *big.Int, toAddr *common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) RemoveLiquidity(nonce uint64, token1Addr *common.Address, token2Addr *common.Address, liquidity *big.Int, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
 	//
-	instance, err := V2router.NewV2router(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
-	tx, err := instance.RemoveLiquidity(transactOpts, *token1Addr, *token2Addr, liquidity, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
+	tx, err := ea.V2RouterInstance.RemoveLiquidity(transactOpts, *token1Addr, *token2Addr, liquidity, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -272,20 +295,16 @@ func (ea *ExtAcc) RemoveLiquidity(nonce uint64, contAddr *common.Address, token1
 }
 
 // uniswap, swap bep20 to bep20
-func (ea *ExtAcc) SwapExactTokensForTokens(nonce uint64, contAddr *common.Address, amountIn *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) SwapExactTokensForTokens(nonce uint64, amountIn *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := V2router.NewV2router(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
+
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
 	// todo: amountOutMin is set to 0 to tolerant possible slippage
-	tx, err := instance.SwapExactTokensForTokens(transactOpts, amountIn, big.NewInt(0), path, *toAddr, deadline)
+	tx, err := ea.V2RouterInstance.SwapExactTokensForTokens(transactOpts, amountIn, big.NewInt(0), path, *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -295,20 +314,16 @@ func (ea *ExtAcc) SwapExactTokensForTokens(nonce uint64, contAddr *common.Addres
 }
 
 // SwapBNBForExactTokens  swap bnb to bep20 (unused bnb will be returned to the caller)
-func (ea *ExtAcc) SwapBNBForExactTokens(nonce uint64, contAddr *common.Address, amountIn *big.Int, amountOut *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) SwapBNBForExactTokens(nonce uint64, amountIn *big.Int, amountOut *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := V2router.NewV2router(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
+
 	transactOpts.Value = amountIn
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
-	tx, err := instance.SwapETHForExactTokens(transactOpts, amountOut, path, *toAddr, deadline)
+	tx, err := ea.V2RouterInstance.SwapETHForExactTokens(transactOpts, amountOut, path, *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -318,20 +333,16 @@ func (ea *ExtAcc) SwapBNBForExactTokens(nonce uint64, contAddr *common.Address, 
 }
 
 // SwapExactTokensForBNB swap bep20   to bnb (unused bnb will be returned to the caller)
-func (ea *ExtAcc) SwapExactTokensForBNB(nonce uint64, contAddr *common.Address, amountIn *big.Int, amountOut *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) SwapExactTokensForBNB(nonce uint64, amountIn *big.Int, path []common.Address, toAddr *common.Address) (*common.Hash, error) {
 	gasLimit := uint64(5e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
 	//
-	instance, err := V2router.NewV2router(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
 	//transactOpts.Value = amountIn
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
-	tx, err := instance.SwapExactTokensForETH(transactOpts, amountIn, big.NewInt(0), path, *toAddr, deadline)
+	tx, err := ea.V2RouterInstance.SwapExactTokensForETH(transactOpts, amountIn, big.NewInt(0), path, *toAddr, deadline)
 	if err != nil {
 		return nil, err
 	}
@@ -341,19 +352,15 @@ func (ea *ExtAcc) SwapExactTokensForBNB(nonce uint64, contAddr *common.Address, 
 }
 
 // wbnb
-func (ea *ExtAcc) DepositWBNB(nonce uint64, contAddr *common.Address, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) DepositWBNB(nonce uint64, amount *big.Int) (*common.Hash, error) {
 	gasLimit := uint64(3e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := wbnb.NewWbnb(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
+
 	transactOpts.Value = amount
-	tx, err := instance.Deposit(transactOpts)
+	tx, err := ea.WbnbInstance.Deposit(transactOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -363,18 +370,14 @@ func (ea *ExtAcc) DepositWBNB(nonce uint64, contAddr *common.Address, amount *bi
 }
 
 // wbnb
-func (ea *ExtAcc) WithdrawWBNB(nonce uint64, contAddr *common.Address, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) WithdrawWBNB(nonce uint64, amount *big.Int) (*common.Hash, error) {
 	gasLimit := uint64(3e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := wbnb.NewWbnb(*contAddr, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := instance.Withdraw(transactOpts, amount)
+
+	tx, err := ea.WbnbInstance.Withdraw(transactOpts, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -396,19 +399,15 @@ func (ea *ExtAcc) SimulateContCall(contAddr *common.Address, transactOpts *bind.
 }
 
 // erc721
-func (ea *ExtAcc) MintERC721(nonce uint64, contractAddress common.Address) (*common.Hash, error) {
+func (ea *ExtAcc) MintERC721(nonce uint64) (*common.Hash, error) {
 	log.Println("erc721 mint action")
-	instance, err := erc721.NewErc721(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
 	gasLimit := uint64(8e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := instance.SafeMint(transactOpts, *ea.Addr)
+	tx, err := ea.Erc721Instance.SafeMint(transactOpts, *ea.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -418,18 +417,14 @@ func (ea *ExtAcc) MintERC721(nonce uint64, contractAddress common.Address) (*com
 }
 
 // erc721
-func (ea *ExtAcc) ApproveERC721(nonce uint64, contractAddress common.Address, spenderAddr *common.Address, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) ApproveERC721(nonce uint64, spenderAddr *common.Address, amount *big.Int) (*common.Hash, error) {
 	gasLimit := uint64(3e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	//
-	instance, err := erc721.NewErc721(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := instance.Approve(transactOpts, *spenderAddr, amount)
+
+	tx, err := ea.Erc721Instance.Approve(transactOpts, *spenderAddr, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -439,18 +434,14 @@ func (ea *ExtAcc) ApproveERC721(nonce uint64, contractAddress common.Address, sp
 }
 
 // erc721
-func (ea *ExtAcc) TransferERC721(nonce uint64, contractAddress common.Address, toAddr *common.Address, TokenID *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) TransferERC721(nonce uint64, toAddr *common.Address, TokenID *big.Int) (*common.Hash, error) {
 	log.Println("erc721 transfer action")
 	gasLimit := uint64(3e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	instance, err := erc721.NewErc721(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := instance.SafeTransferFrom(transactOpts, *ea.Addr, *toAddr, TokenID)
+	tx, err := ea.Erc721Instance.SafeTransferFrom(transactOpts, *ea.Addr, *toAddr, TokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -460,12 +451,8 @@ func (ea *ExtAcc) TransferERC721(nonce uint64, contractAddress common.Address, t
 }
 
 // erc721
-func (ea *ExtAcc) Get721TotalSupply(contractAddress common.Address) (*big.Int, error) {
-	instance, err := erc721.NewErc721(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	totalSupply, err := instance.TotalSupply(&bind.CallOpts{})
+func (ea *ExtAcc) Get721TotalSupply() (*big.Int, error) {
+	totalSupply, err := ea.Erc721Instance.TotalSupply(&bind.CallOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -473,12 +460,8 @@ func (ea *ExtAcc) Get721TotalSupply(contractAddress common.Address) (*big.Int, e
 }
 
 // erc721
-func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int, error) {
-	instance, err := erc721.NewErc721(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	tokenID, err := instance.TokenOfOwnerByIndex(&bind.CallOpts{}, *ea.Addr, big.NewInt(0))
+func (ea *ExtAcc) GetOneERC721TokenID() (*big.Int, error) {
+	tokenID, err := ea.Erc721Instance.TokenOfOwnerByIndex(&bind.CallOpts{}, *ea.Addr, big.NewInt(0))
 	if err != nil {
 		return nil, err
 	}
@@ -486,18 +469,14 @@ func (ea *ExtAcc) GetOneERC721TokenID(contractAddress common.Address) (*big.Int,
 }
 
 // erc1155
-func (ea *ExtAcc) MintERC1155(nonce uint64, contractAddress common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) MintERC1155(nonce uint64, tokenID, amount *big.Int) (*common.Hash, error) {
 	log.Println("erc1155 mint action")
-	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
 	gasLimit := uint64(8e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := instance.Mint(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
+	tx, err := ea.Erc1155Instance.Mint(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
 	if err != nil {
 		return nil, err
 	}
@@ -506,17 +485,13 @@ func (ea *ExtAcc) MintERC1155(nonce uint64, contractAddress common.Address, toke
 	return &txHash, nil
 }
 
-func (ea *ExtAcc) MintBatchERC1155(nonce uint64, contractAddress common.Address, tokenID, amount []*big.Int) (*common.Hash, error) {
-	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
+func (ea *ExtAcc) MintBatchERC1155(nonce uint64, tokenID, amount []*big.Int) (*common.Hash, error) {
 	gasLimit := uint64(8e6)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := instance.MintBatch(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
+	tx, err := ea.Erc1155Instance.MintBatch(transactOpts, *ea.Addr, tokenID, amount, []byte{0x00})
 	if err != nil {
 		return nil, err
 	}
@@ -525,7 +500,7 @@ func (ea *ExtAcc) MintBatchERC1155(nonce uint64, contractAddress common.Address,
 	return &txHash, nil
 }
 
-func (ea *ExtAcc) BurnERC1155(nonce uint64, contractAddress common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) BurnERC1155(nonce uint64, tokenID, amount *big.Int) (*common.Hash, error) {
 	log.Println("erc1155 burn action")
 	gasLimit := uint64(3e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
@@ -533,11 +508,7 @@ func (ea *ExtAcc) BurnERC1155(nonce uint64, contractAddress common.Address, toke
 		return nil, err
 	}
 
-	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := instance.Burn(transactOpts, *ea.Addr, tokenID, amount)
+	tx, err := ea.Erc1155Instance.Burn(transactOpts, *ea.Addr, tokenID, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -546,19 +517,15 @@ func (ea *ExtAcc) BurnERC1155(nonce uint64, contractAddress common.Address, toke
 	return &hash, nil
 }
 
-func (ea *ExtAcc) GetOneERC1155TokenID(contractAddress common.Address, tokenIDSlice []*big.Int) (*big.Int, error) {
+func (ea *ExtAcc) GetOneERC1155TokenID(tokenIDSlice []*big.Int) (*big.Int, error) {
 	var accounts []common.Address
 	var isEmpty = true
 	var tokenID *big.Int
 
-	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
 	for range tokenIDSlice {
 		accounts = append(accounts, *ea.Addr)
 	}
-	balance, err := instance.BalanceOfBatch(&bind.CallOpts{}, accounts, tokenIDSlice)
+	balance, err := ea.Erc1155Instance.BalanceOfBatch(&bind.CallOpts{}, accounts, tokenIDSlice)
 	if err != nil {
 		return nil, err
 	}
@@ -577,20 +544,15 @@ func (ea *ExtAcc) GetOneERC1155TokenID(contractAddress common.Address, tokenIDSl
 }
 
 // erc1155
-func (ea *ExtAcc) TransERC1155(nonce uint64, contractAddress common.Address, toAddr common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
+func (ea *ExtAcc) TransERC1155(nonce uint64, toAddr common.Address, tokenID, amount *big.Int) (*common.Hash, error) {
 	log.Println("erc1155 trans action")
-	instance, err := erc1155.NewErc1155(contractAddress, ea.Client)
-	if err != nil {
-		return nil, err
-	}
-
 	gasLimit := uint64(6e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := instance.SafeTransferFrom(transactOpts, *ea.Addr, toAddr, tokenID, amount, []byte{0x00})
+	tx, err := ea.Erc1155Instance.SafeTransferFrom(transactOpts, *ea.Addr, toAddr, tokenID, amount, []byte{0x00})
 	if err != nil {
 		return nil, err
 	}
