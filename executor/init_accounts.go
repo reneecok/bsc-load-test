@@ -23,7 +23,7 @@ func InitAccount(clients []*ethclient.Client, nonce uint64, root utils.ExtAcc) {
 	InitCoins(limiter, nonce, root, eaSlice, slaveEaSlice)
 	endTime := time.Now()
 	log.Printf("init account: send coins total %f seconds.", endTime.Sub(startTime).Seconds())
-	InitSingleAccount(limiter, nonce, root, eaSlice, slaveEaSlice)
+	InitSingleAccount(limiter, eaSlice)
 	endTime = time.Now()
 	log.Printf("init account: finished, total %f seconds.", endTime.Sub(startTime).Seconds())
 
@@ -114,7 +114,7 @@ func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSli
 	slaveWg.Wait()
 }
 
-func InitSingleAccount(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSlice, slaveEaSlice []utils.ExtAcc) {
+func InitSingleAccount(limiter ratelimit.Limiter, eaSlice []utils.ExtAcc) {
 	var tokenAmountSlice []*big.Int
 	for range utils.T_cfg.Erc1155TokenIDSlice {
 		tokenAmountSlice = append(tokenAmountSlice, big.NewInt(int64(utils.T_cfg.Erc1155InitTokenNumber)))
