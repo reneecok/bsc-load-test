@@ -207,7 +207,7 @@ func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
 	for i := 0; i < len(hashList); i++ {
 		limiter.Take()
 		receipt := root.GetReceipt(hashList[i], 10)
-		if receipt.Status == 1 {
+		if receipt != nil && receipt.Status == 1 {
 			numberLock.Lock()
 			txnFinishedNumber++
 			numberLock.Unlock()
