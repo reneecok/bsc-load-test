@@ -201,18 +201,27 @@ func Load(clients []*ethclient.Client, hexkeyfile string, usersLoaded *int) []Ex
 func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
 	var wg sync.WaitGroup
 	var numberLock sync.Mutex
-	wg.Add(len(hashList))
+	i := 0
 	limiter := ratelimit.New(tps)
 	txnFinishedNumber := 0
-	for i := 0; i < len(hashList); i++ {
+	for {
 		limiter.Take()
-		receipt := root.GetReceipt(hashList[i], 10)
-		if receipt != nil && receipt.Status == 1 {
-			numberLock.Lock()
-			txnFinishedNumber++
-			numberLock.Unlock()
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, i int) {
+			defer wg.Done()
+			receipt := root.GetReceipt(hashList[i], 10)
+			if receipt != nil && receipt.Status == 1 {
+				numberLock.Lock()
+				txnFinishedNumber++
+				numberLock.Unlock()
+			}
+		}(&wg, i)
+		i++
+		if i == len(hashList) {
+			break
 		}
 	}
+	wg.Wait()
 	log.Println("tx hash returned in load test: ", len(hashList))
 	log.Println("tx finished in load test: ", txnFinishedNumber)
 }
