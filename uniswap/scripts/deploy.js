@@ -2,12 +2,17 @@
 require('dotenv').config('../.env')
 const {ethers} = require('hardhat');
 const path = require('path');
+const fs = require('fs');
+const {parseDocument} = require('yaml');
 
 const utils = require('./utils.js');
+const { providers } = require('ethers');
 const numOfContract = process.env.NumberOfContract
 
 async function main() {
+
     const [owner] = await ethers.getSigners();
+    chainId = await owner.getChainId()
     let contractAddress = {};
     console.log('owner: ' + owner.address)
     // We get the contract to deploy bep20
@@ -15,6 +20,8 @@ async function main() {
     let Factory = await ethers.getContractFactory('UniswapV2Factory');
     let WBNB = await ethers.getContractFactory('WBNB');
     let Router = await ethers.getContractFactory('UniswapV2Router02');
+    let Nft721 = await ethers.getContractFactory('MyToken')
+    let Nft1155 = await ethers.getContractFactory('TERC1155')
 
     let addresses = [];
     for (let i = 0; i < numOfContract; i++) {
@@ -86,8 +93,16 @@ async function main() {
     console.log('router: ' + router.address);
     contractAddress['Router'] = router.address
 
-    let filepath = path.join(path.dirname(__filename), '../contracts.json');
-    utils.writeJsonObject(filepath, contractAddress);
+    let nft721 = await Nft721.deploy()
+    await nft721.deployed()
+    console.log('nft721: ' + nft721.address);
+    contractAddress['Nft721'] = nft721.address
+
+    let nft1155 = await Nft1155.deploy()
+    await nft1155.deployed()
+    console.log('nft1155: ' + nft1155.address);
+    contractAddress['Nft1155'] = nft1155.address
+
 
     // print out all params
     let ben20ContractAddress = contractAddress["bep20"];
@@ -98,10 +113,26 @@ async function main() {
     let routerContractAddress = contractAddress["Router"];
     let wbnbContractAddress = contractAddress['WBNB'];
     let factoryContractAddress = contractAddress['factory'];
+    let nft721ContractAddress = contractAddress['Nft721'];
+    let nft1155ContractAddress = contractAddress['Nft1155'];
 
     console.log("\nCopy Command Line Params From Here: \n")
     console.log("-bep20Hex=\"" + printBep20Address + "\"" + " " + "-uniswapRouterHex=" + routerContractAddress + " " +
-        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress)
+        "-wbnbHex=" + wbnbContractAddress + " " + "-uniswapFactoryHex=" + factoryContractAddress + " -erc721Hex=" + nft721ContractAddress + " " +
+        "-erc1155Hex=" + nft1155ContractAddress)
+
+    let file = fs.readFileSync('../config.yml', 'utf-8');
+    const origin = parseDocument(file);
+    origin.set("Bep20Hex", printBep20Address)
+    origin.set("WbnbHex", wbnbContractAddress)
+    origin.set("UniswapFactoryHex", factoryContractAddress)
+    origin.set("UniswapRouterHex", routerContractAddress)
+    origin.set("Erc721Hex", nft721ContractAddress)
+    origin.set("Erc1155Hex", nft1155ContractAddress)
+    origin.set("ChainId", chainId)
+    origin.set("Endpoints", process.env.RPC_URL)
+
+    fs.writeFileSync('../config.yml', origin.toString());
 }
 
 main()

@@ -5,13 +5,19 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
+	"strings"
+	"sync"
 	"time"
+
+	"go.uber.org/ratelimit"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 func init() {
@@ -23,18 +29,26 @@ const (
 	// for bep20 contract
 	SendBEP20 = "SendBEP20"
 	// for uniswap contract
-	AddLiquidity = "AddLiquidity"
-	RemoveLiquidity = "RemoveLiquidity"
+	AddLiquidity             = "AddLiquidity"
+	RemoveLiquidity          = "RemoveLiquidity"
 	SwapExactTokensForTokens = "SwapExactTokensForTokens"
-	SwapBNBForExactTokens = "SwapBNBForExactTokens"
+	SwapBNBForExactTokens    = "SwapBNBForExactTokens"
 	// for wbnb contract
-	DepositWBNB = "DepositWBNB"
+	DepositWBNB  = "DepositWBNB"
 	WithdrawWBNB = "WithdrawWBNB"
+	// for NFT contract
+	ERC721MintOrTransfer        = "ERC721MintOrTransfer"
+	ERC721Mint                  = "ERC721Mint"
+	ERC721Transfer              = "ERC721Transfer"
+	ERC1155MintOrBurnOrTransfer = "ERC1155MintOrBurnOrTransfer"
+	ERC1155Mint                 = "ERC1155Mint"
+	ERC1155Burn                 = "ERC1155Burn"
+	ERC1155Transfer             = "ERC1155Transfer"
 )
 
 type Scenario struct {
-	Name    string
-	Weight  int
+	Name   string
+	Weight int
 }
 
 func RandScenario(scenarios []Scenario) *Scenario {
@@ -44,7 +58,7 @@ func RandScenario(scenarios []Scenario) *Scenario {
 		totalWeight += v.Weight
 	}
 	//
-	r := rand.Intn(totalWeight)
+	r := rand.Intn(totalWeight) + 1
 	for _, v := range scenarios {
 		r -= v.Weight
 		if r <= 0 {
@@ -117,7 +131,7 @@ func LoadHexKeys(fullpath string, numOfKeys int) [][]string {
 			break
 		}
 		line := scanner.Text()
-		if index != 0 && index % batchSize == 0 {
+		if index != 0 && index%batchSize == 0 {
 			batches = append(batches, lines)
 			lines = make([]string, 0, batchSize)
 		}
@@ -149,4 +163,66 @@ func SaveHash(fullpath string, results []*common.Hash) error {
 		panic(err.Error())
 	}
 	return nil
+}
+
+func Load(clients []*ethclient.Client, hexkeyfile string, usersLoaded *int) []ExtAcc {
+	batches := LoadHexKeys(hexkeyfile, *usersLoaded)
+	eaSlice := make([]ExtAcc, 0, *usersLoaded)
+	//
+	start := time.Now()
+	var wg sync.WaitGroup
+	var mx sync.Mutex
+	for i, batch := range batches {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, i int, batch []string) {
+			defer wg.Done()
+			log.Printf("processing ea batch [%d]", i)
+			for j, v := range batch {
+				client := clients[j%len(clients)]
+				items := strings.Split(v, ",")
+				ea, err := NewExtAcc(client, items[0], items[1])
+				if err != nil {
+					panic(err.Error())
+				}
+				mx.Lock()
+				eaSlice = append(eaSlice, *ea)
+				mx.Unlock()
+			}
+		}(&wg, i, batch)
+	}
+	wg.Wait()
+	//
+	end := time.Now()
+	log.Printf("ea load time (ms): %d",
+		end.Sub(start).Milliseconds())
+	log.Printf("%d loaded", len(eaSlice))
+	return eaSlice
+}
+func CheckAllTransactionStatus(root *ExtAcc, hashList []*common.Hash, tps int) {
+	var wg sync.WaitGroup
+	var numberLock sync.Mutex
+	wg.Add(len(hashList))
+	limiter := ratelimit.New(tps)
+	txnFinishedNumber := 0
+	for i := 0; i < len(hashList); i++ {
+		limiter.Take()
+		receipt := root.GetReceipt(hashList[i], 10)
+		if receipt != nil && receipt.Status == 1 {
+			numberLock.Lock()
+			txnFinishedNumber++
+			numberLock.Unlock()
+		}
+	}
+	log.Println("tx hash returned in load test: ", len(hashList))
+	log.Println("tx finished in load test: ", txnFinishedNumber)
+}
+
+func SetupTimer(dur time.Duration) *bool {
+	t := time.NewTimer(dur)
+	expired := false
+	go func() {
+		<-t.C
+		expired = true
+	}()
+	return &expired
 }

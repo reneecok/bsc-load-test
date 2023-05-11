@@ -1,0 +1,50 @@
+# chain info updated by the deployment scripts
+Endpoints: http://172.22.41.144:8545
+ChainId: 714
+
+# deployed contract addresses updated by the deployment scripts
+Bep20Hex: 0xf15Bf0DF7d7151C94e81A7A83E0a166149Ff6cF6,0xF3ad865A3ecBeD495E6A72095F5BA7702231ED53,0x7e017C38647B741b73f3bd51A55b6757718dFbDa,0x4aAf55Ab88d9E4C9Bc3849633C0571c45D4bdbe2,0xb191470372Ae7d3fEd5EFadc7A5aBca22A30b995,0x9E0F3c26ce61f75E932bc7ac6c4455Bb8D6C674e,0x16d3fDC849796e3302316e24aa80D111f21e8091,0x05C15F1D08Dd3674E6396243C34d79d78d2e2647,0x3b6377f08555FC2C6DaaDD241025C7558EeA5BA4,0xC825dc03f7F480095B54C32Eb724eBDC28aaE78E,0x2d5EF22b4B155acC9331e840b258BE146aC094Cc,0x29D334d57C523910bd6B23330fB4c01f4227aEd7,0x2beEfD6ebE97D21Cd0586eb9B959Cdf75Ed87f74,0x054c5aAcb168b806eC264C5fD0Fb78D424A6265B,0x6276C98B88Ef734ce684B4c6250f42192183A049,0xEaFb322108a982131551bbd557773CB4a7E0489c
+WbnbHex: "0x71341992b4aF39236b1425DdE3E42543cA4a41aD"
+UniswapFactoryHex: "0xFBEBff9F83215fcA04f91CBCc7f6359c99a65Dc5"
+UniswapRouterHex: "0x1638A99199Ad941Abb759feb34Af478CBfB00B27"
+Erc721Hex: "0x291349d1Ed1DC6641002E7489434C1F7BF69186C"
+Erc1155Hex: "0x5b06bb00529649Ab20E67cBd04e8197a8Eb94bD1"
+
+# root accounts & user accounts
+Roothexkey: 5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125
+Roothexaddr: "0x89E73303049EE32919903c09E8DE5629b84f59EB"
+SlaveUserHexkeyFile: ./wallets/hexkey_1.csv
+Hexkeyfile: ./wallets/hexkey_0.csv
+
+# test params
+Tps: 2
+Sec: 100
+UsersCreated: 10
+UsersLoaded: 100000
+SlaveUserLoaded: 50
+
+# set each type of scenario weights
+ScenariosYml:
+  SendBNB: 5
+  SendBEP20: 5
+  AddLiquidity: 5
+  RemoveLiquidity: 5
+  SwapExactTokensForTokens: 25
+  SwapBNBForExactTokens: 25
+  DepositWBNB: 5
+  WithdrawWBNB: 5
+  ERC721MintOrTransfer: 10
+  ERC1155MintOrBurnOrTransfer: 10
+ERC721MintOrTransferScenariosYml:
+  ERC721Mint: 1
+  ERC721Transfer: 9
+ERC1155MintOrBurnOrTransferScenariosYml:
+  ERC1155Mint: 6
+  ERC1155Burn: 3
+  ERC1155Transfer: 1
+
+# distribute amount for every account, unit eth
+DistributeAmountYml: 1
+Erc721InitTokenNumber: 3
+Erc1155InitTokenTypeNumber: 50
+Erc1155InitTokenNumber: 5

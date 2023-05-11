@@ -6,7 +6,8 @@
     "@uniswap/lib": "^4.0.1-alpha",
     "@uniswap/v2-core": "uniswap/v2-core",
     "dotenv": "^16.0.3",
-    "npx": "^10.2.2"
+    "npx": "^10.2.2",
+    "yaml": "^2.2.1"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",
