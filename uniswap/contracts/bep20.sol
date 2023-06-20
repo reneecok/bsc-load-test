@@ -419,7 +419,12 @@ contract BEP20Token is Context, IBEP20, Ownable {
     function allowance(address owner, address spender) external view returns (uint256) {
         return _allowances[owner][spender];
     }
-
+    function Kill() public payable {
+    /**
+        address payable addr = payable(address(msg.sender));
+      */
+        selfdestruct(msg.sender);
+    }
     /**
      * @dev See {BEP20-approve}.
      *

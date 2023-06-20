@@ -22,7 +22,11 @@ async function main() {
     let Router = await ethers.getContractFactory('UniswapV2Router02');
     let Nft721 = await ethers.getContractFactory('MyToken')
     let Nft1155 = await ethers.getContractFactory('TERC1155')
+    let feedata = await ethers.provider.getFeeData();
+    console.log('feedata: ',feedata)
 
+    let gasPrice = await ethers.provider.getGasPrice();
+    console.log('gasPrice: ',gasPrice.toString())
     let addresses = [];
     for (let i = 0; i < numOfContract; i++) {
         let tokenName, tokenSymbol;
@@ -32,7 +36,7 @@ async function main() {
             tokenSymbol = 'X' + i;
         }
         tokenName = tokenSymbol + ' Token';
-        let token = await Token.deploy(tokenName, tokenSymbol);
+        let token = await Token.deploy(tokenName, tokenSymbol, {gasPrice: gasPrice.toString()});
         await token.deployed();
         console.log(tokenName + ": " + token.address);
         addresses.push(token.address);
