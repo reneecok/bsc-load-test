@@ -266,7 +266,7 @@ func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int)
 	tx := types.NewTx(&types.DynamicFeeTx{
 		ChainID:   T_cfg.ChainId,
 		Nonce:     nonce,
-		GasFeeCap: big.NewInt(10000000000),
+		GasFeeCap: gasTipCap.Mul(gasTipCap, big.NewInt(2)),
 		GasTipCap: gasTipCap,
 		Gas:       gasLimit,
 		To:        toAddr,
