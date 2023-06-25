@@ -26,6 +26,7 @@ contract TERC1155 is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply {
     }
     function Kill() external payable {
         address payable addr = payable(address(msg.sender));
+
         selfdestruct(addr);
     }
     // The following functions are overrides required by Solidity.

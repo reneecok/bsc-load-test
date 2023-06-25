@@ -180,6 +180,9 @@ func (ea *ExtAcc) GetReceipt(hash *common.Hash, waitTimeSec int64) *types.Receip
 
 func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 	ctx := context.Background()
+	var txns uint64
+	var gasPerTx uint64
+	var allGasUsed uint64
 	for i := start; i < end; i++ {
 		blockNum := big.NewInt(i)
 		block, err := ea.Client.BlockByNumber(ctx, blockNum)
@@ -206,15 +209,39 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 			block.GasLimit(),
 			block.GasUsed(),
 			gasPerTx)
+		txns += uint64(len(block.Transactions())) - 1
+		allGasUsed += block.GasUsed()
 	}
+	gasPerTx = allGasUsed / txns
+	log.Printf("from: %d to: %d txns: %d gasPerTx: %d", start, end, txns, gasPerTx)
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
-	gasPrice, err := ea.Client.SuggestGasPrice(context.Background())
+	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
+	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
+	if err != nil {
+		return nil, err
+	}
+	transactOpts.Nonce = big.NewInt(int64(*nonce))
+	transactOpts.Value = big.NewInt(0)
+	transactOpts.GasLimit = *gasLimit
+	transactOpts.GasFeeCap = gasTipCap.Add(gasTipCap, gasTipCap)
+	transactOpts.GasTipCap = gasTipCap
+	//
+	return transactOpts, nil
+}
+
+func (ea *ExtAcc) BuildTransactOptsNoEip1559(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
+	gasPrice := big.NewInt(6e10)
+	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
+	log.Print("gasTipCap", gasTipCap)
+	if err != nil {
+		return nil, err
+	}
 	//
 	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
@@ -230,6 +257,36 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 
 // native
 func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int) (*common.Hash, error) {
+	gasLimit := uint64(21000)
+	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	tx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   T_cfg.ChainId,
+		Nonce:     nonce,
+		GasFeeCap: gasTipCap.Mul(gasTipCap, big.NewInt(2)),
+		GasTipCap: gasTipCap,
+		Gas:       gasLimit,
+		To:        toAddr,
+		Value:     amount,
+	})
+	signedTx, err := types.SignTx(tx, types.LatestSignerForChainID(T_cfg.ChainId), ea.Key)
+	if err != nil {
+		return nil, err
+	}
+	err = ea.Client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return nil, err
+	}
+	hash := signedTx.Hash()
+	log.Printf("amount %d send bnb: %s \n", amount.Int64(), hash.Hex())
+	return &hash, nil
+}
+
+// native
+func (ea *ExtAcc) SendBNBWithoutEIP1559(nonce uint64, toAddr *common.Address, amount *big.Int) (*common.Hash, error) {
 	//
 	gasLimit := uint64(23000)
 	ctx := context.Background()
@@ -265,7 +322,7 @@ func (ea *ExtAcc) SendBEP20(nonce uint64, contAddr *common.Address, toAddr *comm
 		return nil, err
 	}
 	hash := tx.Hash()
-	log.Printf("send bep20: %s\n", hash.Hex())
+	log.Printf("amount %d send bep20: %s \n", amount.Int64(), hash.Hex())
 	return &hash, nil
 }
 
@@ -300,7 +357,7 @@ func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2A
 		return nil, err
 	}
 	hash := tx.Hash()
-	log.Printf("add liquidity: %s\n", hash.Hex())
+	log.Printf("gas %d tip %d add liquidity: %s ea: %s token1: %s token2: %s\n", transactOpts.GasLimit, transactOpts.GasTipCap, hash.Hex(), ea.Addr, *token1Addr, *token2Addr)
 	return &hash, nil
 }
 
@@ -403,7 +460,7 @@ func (ea *ExtAcc) DepositWBNB(nonce uint64, amount *big.Int) (*common.Hash, erro
 		return nil, err
 	}
 	hash := tx.Hash()
-	log.Printf("deposit wbnb: %s\n", hash.Hex())
+	log.Printf("gas %d tip %d deposit wbnb: %s\n", transactOpts.GasLimit, transactOpts.GasTipCap, hash.Hex())
 	return &hash, nil
 }
 
