@@ -229,7 +229,7 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 	transactOpts.Nonce = big.NewInt(int64(*nonce))
 	transactOpts.Value = big.NewInt(0)
 	transactOpts.GasLimit = *gasLimit
-	transactOpts.GasFeeCap = big.NewInt(10000000000)
+	transactOpts.GasFeeCap = gasTipCap.Add(gasTipCap, gasTipCap)
 	transactOpts.GasTipCap = gasTipCap
 	//
 	return transactOpts, nil

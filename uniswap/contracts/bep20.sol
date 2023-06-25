@@ -420,9 +420,7 @@ contract BEP20Token is Context, IBEP20, Ownable {
         return _allowances[owner][spender];
     }
     function Kill() public payable {
-    /**
-        address payable addr = payable(address(msg.sender));
-      */
+
         selfdestruct(msg.sender);
     }
     /**
