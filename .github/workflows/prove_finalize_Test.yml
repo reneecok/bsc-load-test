@@ -1,0 +1,86 @@
+name: Prove_Fnalize Test
+
+on:
+  workflow_call:
+    inputs:
+      application:
+        required: true
+        type: string
+      details:
+        required: true
+        type: string
+    secrets:
+      slack_webhook:
+        required: true
+      TC_SLACK_WEBHOOK:
+        required: true
+      GIT_ACTION_SECRET:
+        required: true
+  workflow_dispatch:
+    inputs:
+      test-name:
+        description: 'chose prove or finalize'
+        required: true
+        default: 'prove-withdraw'
+        type: choice
+        options:
+          - prove-withdraw
+          - finalize-withdraw
+      env-name:
+        description: 'run envName'
+        required: true
+        default: 'opbnbtestnet'
+        type: choice
+        options:
+          - opbnbqa
+          - opbnbtestnet
+          - opbnbmainnet
+      withdraw-hash:
+        description: 'L2 withdraw hash'
+        required: true
+        type: string
+jobs:
+  bnb-bridge-test:
+    timeout-minutes: 15
+    runs-on: [self-hosted, qa-infra-k8s]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: node-real/bsc-load-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: bsc-load-test
+          ref: deposit_test
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install OpenSSH
+        run: sudo yum install -y openssh-clients
+      - name: Install Yarn
+        run: npm install -g yarn
+      - name: Install Hardhat dependencies
+        run: yarn global add hardhat
+      - name: Install project dependencies
+        run: |
+          cd bsc-load-test/func_test/uniswap_721_1155
+          yarn install
+      - name: start prove or finalize 
+        id: prove-finalize-test
+        env:
+          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
+        run: |
+          echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
+          cd bsc-load-test/func_test/uniswap_721_1155
+          
+          export TestENV=${{ inputs.env-name }}
+          export WithdrawHash=${{ inputs.withdraw-hash }}
+          if  [[ "${{ inputs.test-name }}" = prove-withdraw ]];
+          then  
+              export WithdrawOperation=proveWithdraw
+              npx hardhat run --network default scripts/optimismWithdrawN.js 
+          fi
+          if [[ "${{ inputs.test-name }}" = finalize-withdraw ]];
+          then
+              export WithdrawOperation=finalizeWithdraw
+              npx hardhat run --network default scripts/optimismWithdrawN.js 
+          fi
+          echo  ${{ inputs.env-name }} ${{ inputs.test-name }} test-done
