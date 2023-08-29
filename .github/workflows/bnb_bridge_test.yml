@@ -1,0 +1,81 @@
+name: BNB Bridge Test
+
+on:
+  workflow_call:
+    inputs:
+      application:
+        required: true
+        type: string
+      details:
+        required: true
+        type: string
+    secrets:
+      slack_webhook:
+        required: true
+      TC_SLACK_WEBHOOK:
+        required: true
+      GIT_ACTION_SECRET:
+        required: true
+  workflow_dispatch:
+    inputs:
+      test-name:
+        description: 'chose deposit or withdraw'
+        required: true
+        default: 'deposit-bnb'
+        type: choice
+        options:
+          - deposit-bnb
+          - withdraw-bnb
+      env-name:
+        description: 'run envName'
+        required: true
+        default: 'opbnbtestnet'
+        type: choice
+        options:
+          - opbnbqa
+          - opbnbtestnet
+          - opbnbmainnet
+jobs:
+  bnb-bridge-test:
+    timeout-minutes: 10
+    runs-on: [self-hosted, qa-infra-k8s]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: node-real/bsc-load-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: bsc-load-test
+          ref: deposit_test
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install OpenSSH
+        run: sudo yum install -y openssh-clients
+      - name: Install Yarn
+        run: npm install -g yarn
+      - name: Install Hardhat dependencies
+        run: yarn global add hardhat
+      - name: Install project dependencies
+        run: |
+          cd bsc-load-test/func_test/uniswap_721_1155
+          yarn install
+
+      - name: start BNB Bridge 
+        id: bnb-bridge-test
+        env:
+          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
+        run: |
+          echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
+          cd bsc-load-test/func_test/uniswap_721_1155
+          
+          export TestENV=${{ inputs.env-name }}
+          if  [[ "${{ inputs.test-name }}" = deposit-bnb ]];
+          then  
+              npx hardhat run --network default scripts/optimismDeposit.js 
+          fi
+          if [[ "${{ inputs.test-name }}" = withdraw-bnb ]];
+          then
+              export WithdrawOperation=justWithdraw
+              npx hardhat run --network default scripts/optimismWithdrawN.js 
+          fi
+          echo  ${{ inputs.env-name }} ${{ inputs.test-name }} test-done
