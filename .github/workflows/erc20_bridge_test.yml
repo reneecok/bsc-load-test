@@ -1,0 +1,96 @@
+name: ERC20 Bridge Test
+
+on:
+  pull_request:
+    # Sequence of patterns matched against refs/heads
+    branches:    
+      - deposit_test
+  workflow_call:
+    inputs:
+      application:
+        required: true
+        type: string
+      details:
+        required: true
+        type: string
+    secrets:
+      slack_webhook:
+        required: true
+      TC_SLACK_WEBHOOK:
+        required: true
+      GIT_ACTION_SECRET:
+        required: true
+  workflow_dispatch:
+    inputs:
+      test-name:
+        description: 'chose deposit or withdraw'
+        required: true
+        default: 'deposit-erc20'
+        type: choice
+        options:
+          - deposit-erc20
+          - withdraw-erc20
+      env-name:
+        description: 'run envName'
+        required: true
+        default: 'opbnbtestnet'
+        type: choice
+        options:
+          - opbnbqa
+          - opbnbtestnet
+          - opbnbmainnet
+      l1token-address:
+        description: 'L1token address'
+        required: false
+        type: string
+      l2token-address:
+        description: 'L2token address'
+        required: false
+        type: string
+jobs:
+  bnb-bridge-test:
+    timeout-minutes: 15
+    runs-on: [self-hosted, qa-infra-k8s]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: node-real/bsc-load-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: bsc-load-test
+          ref: deposit_test
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Install Yarn
+        run: npm install -g yarn
+      - name: Install Hardhat dependencies
+        run: yarn global add hardhat
+      - name: Install project dependencies
+        run: |
+          pwd
+          cd bsc-load-test/func_test/uniswap_721_1155
+          pwd
+          yarn install
+
+      - name: start ERC20 Bridge 
+        id: erc20-bridge-test
+        env:
+          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
+        run: |
+          echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
+          pwd
+          cd bsc-load-test/func_test/uniswap_721_1155
+          pwd
+          export TestENV=${{ inputs.env-name }}
+          export L1Token=${{ inputs.l1token-address }}
+          export L2Token=${{ inputs.l2token-address }}
+          if  [[ "${{ inputs.test-name }}" = deposit-erc20 ]];
+          then  
+              npx hardhat run --network default scripts/optimismDeposit20Tokens.js 
+          fi
+          if [[ "${{ inputs.test-name }}" = withdraw-erc20 ]];
+          then
+              export WithdrawOperation=justWithdraw
+              npx hardhat run --network default scripts/optimismWithdraw20Tokens.js 
+          fi
+          echo  ${{ inputs.env-name }} ${{ inputs.test-name }} test-done
