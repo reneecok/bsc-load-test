@@ -1,25 +1,19 @@
 name: ERC20 Bridge Test
 
 on:
-  pull_request:
-    # Sequence of patterns matched against refs/heads
-    branches:    
-      - deposit_test
+  repository_dispatch:
+    types: [opbnb-test]
   workflow_call:
     inputs:
-      application:
+      test-name:
         required: true
         type: string
-      details:
+      env-name:
         required: true
         type: string
-    secrets:
-      slack_webhook:
+      ref:
         required: true
-      TC_SLACK_WEBHOOK:
-        required: true
-      GIT_ACTION_SECRET:
-        required: true
+        type: string
   workflow_dispatch:
     inputs:
       test-name:
@@ -41,11 +35,11 @@ on:
           - opbnbmainnet
       l1token-address:
         description: 'L1token address'
-        required: false
+        required: true
         type: string
       l2token-address:
         description: 'L2token address'
-        required: false
+        required: true
         type: string
 jobs:
   bnb-bridge-test:
@@ -62,25 +56,18 @@ jobs:
         with:
           node-version: 16
       - name: Install Yarn
-        run: npm install -g yarn
-      - name: Install Hardhat dependencies
-        run: yarn global add hardhat
+        run: npm install -g hardhat
       - name: Install project dependencies
         run: |
-          pwd
           cd bsc-load-test/func_test/uniswap_721_1155
-          pwd
-          yarn install
-
+          npm install
       - name: start ERC20 Bridge 
         id: erc20-bridge-test
         env:
           Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
         run: |
           echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
-          pwd
           cd bsc-load-test/func_test/uniswap_721_1155
-          pwd
           export TestENV=${{ inputs.env-name }}
           export L1Token=${{ inputs.l1token-address }}
           export L2Token=${{ inputs.l2token-address }}
@@ -94,3 +81,23 @@ jobs:
               npx hardhat run --network default scripts/optimismWithdraw20Tokens.js 
           fi
           echo  ${{ inputs.env-name }} ${{ inputs.test-name }} test-done
+      - name: cc_warning
+        id: cc-warning
+        if: failure()
+        uses: indiesdev/curl@v1.1
+        with:
+          url: ${{ secrets.CCURL }}
+          method: "POST"
+          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
+          timeout: 5000
+          body: '{ "groupID": "${{secrets.CCGroupID}}",  "msg": "-----------------------\n* ${{ inputs.env-name }} run ${{ inputs.test-name }} failure!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
+      - name: cc_info
+        id: cc-info
+        if: success()
+        uses: indiesdev/curl@v1.1
+        with:
+          url: ${{ secrets.CCURL }}
+          method: "POST"
+          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
+          timeout: 5000
+          body: '{ "groupID": "${{secrets.CCGroupID}}",  "msg": "-----------------------\n* ${{ inputs.env-name }} run ${{ inputs.test-name }}  pass!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
