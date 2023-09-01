@@ -33,6 +33,10 @@ on:
           - opbnbqa
           - opbnbtestnet
           - opbnbmainnet
+      amount:
+        description: 'amount'
+        required: true
+        type: string
       l1token-address:
         description: 'L1token address'
         required: true
@@ -69,6 +73,7 @@ jobs:
           echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
           cd bsc-load-test/func_test/uniswap_721_1155
           export TestENV=${{ inputs.env-name }}
+          export AMOUNT=${{ inputs.amount }}
           export L1Token=${{ inputs.l1token-address }}
           export L2Token=${{ inputs.l2token-address }}
           if  [[ "${{ inputs.test-name }}" = deposit-erc20 ]];
