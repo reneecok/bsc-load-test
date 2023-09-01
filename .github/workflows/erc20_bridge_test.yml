@@ -35,15 +35,15 @@ on:
           - opbnbmainnet
       amount:
         description: 'amount'
-        required: true
+        required: false
         type: string
       l1token-address:
         description: 'L1token address'
-        required: true
+        required: false
         type: string
       l2token-address:
         description: 'L2token address'
-        required: true
+        required: false
         type: string
 jobs:
   bnb-bridge-test:
