@@ -33,6 +33,10 @@ on:
           - opbnbqa
           - opbnbtestnet
           - opbnbmainnet
+      amount:
+        description: 'amount'
+        required: true
+        type: string
 jobs:
   bnb-bridge-test:
     timeout-minutes: 10
@@ -43,7 +47,6 @@ jobs:
           repository: node-real/bsc-load-test
           token: ${{ secrets.GITHUB_TOKEN }}
           path: bsc-load-test
-          ref: deposit_test
       - uses: actions/setup-node@v3
         with:
           node-version: 16
@@ -62,6 +65,7 @@ jobs:
           cd bsc-load-test/func_test/uniswap_721_1155
           
           export TestENV=${{ inputs.env-name }}
+          export AMOUNT=${{ inputs.amount }}
           if  [[ "${{ inputs.test-name }}" = deposit-bnb ]];
           then  
               npx hardhat run --network default scripts/optimismDeposit.js 
