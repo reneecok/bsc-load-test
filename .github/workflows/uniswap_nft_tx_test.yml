@@ -32,6 +32,7 @@ jobs:
       - name: start send tx
         id: uniswap-nft-tx-test
         run: |
+          export PATH=$PATH:/usr/local/go/bin
           echo "run: ${{ inputs.env-name }}  uniswap-nft-tx-test "
           cd bsc-load-test/load_test/
           go build -o build/driver driver.go
