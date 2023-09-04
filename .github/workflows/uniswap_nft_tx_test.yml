@@ -1,0 +1,39 @@
+name: Uniswap and Nft tx test
+
+on:
+  repository_dispatch:
+    types: [opbnb-test]
+  workflow_call:
+    inputs:
+      env-name:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      env-name:
+        description: 'run envName'
+        required: true
+        default: 'opbnbtestnet'
+        type: choice
+        options:
+          - opbnb-qa
+          - opbnb-testnet
+          # - opbnb-mainnet
+jobs:
+  uniswap-nft-tx-test:
+    timeout-minutes: 10
+    runs-on: [self-hosted, qa-infra-k8s]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: node-real/bsc-load-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: bsc-load-test
+      - name: start send tx
+        id: uniswap-nft-tx-test
+        run: |
+          echo "run: ${{ inputs.env-name }}  uniswap-nft-tx-test "
+          cd bsc-load-test/load_test/
+          go build -o build/driver driver.go
+          ./build/driver -runSanityCheck -configPath=${{ inputs.env-name }}-pipeline.yml
+          echo $?
