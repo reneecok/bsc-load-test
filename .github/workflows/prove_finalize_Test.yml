@@ -61,6 +61,7 @@ jobs:
         id: prove-finalize-test
         env:
           Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
           cd bsc-load-test/func_test/uniswap_721_1155
