@@ -24,6 +24,13 @@ on:
         options:
           - deposit-bnb
           - withdraw-bnb
+      from-address:
+        description: 'from address'
+        required: true
+        default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+        type: choice
+        options:
+          - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
       env-name:
         description: 'run envName'
         required: true
