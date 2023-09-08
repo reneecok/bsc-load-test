@@ -30,7 +30,6 @@ on:
         default: 'opbnbtestnet'
         type: choice
         options:
-          - opbnbqa
           - opbnbtestnet
           - opbnbmainnet
       withdraw-hash:
@@ -51,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: Install Yarn
+      - name: Install hardhat
         run: npm install -g hardhat
       - name: Install project dependencies
         run: |
