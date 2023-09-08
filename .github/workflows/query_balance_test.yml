@@ -16,7 +16,6 @@ on:
         type: string
   workflow_dispatch:
     inputs:
-      test-name:
       env-name:
         description: 'run envName'
         required: true
