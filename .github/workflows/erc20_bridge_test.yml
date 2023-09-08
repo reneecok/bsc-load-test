@@ -30,13 +30,13 @@ on:
         default: 'opbnbtestnet'
         type: choice
         options:
-          - opbnbqa
           - opbnbtestnet
           - opbnbmainnet
       amount:
         description: 'amount'
         required: false
         type: string
+        default: '0.001'
       l1token-address:
         description: 'L1token address'
         required: false
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - name: Install Yarn
+      - name: Install hardhat
         run: npm install -g hardhat
       - name: Install project dependencies
         run: |
