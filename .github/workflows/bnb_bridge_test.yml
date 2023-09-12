@@ -54,7 +54,7 @@ jobs:
           repository: node-real/bsc-load-test
           token: ${{ secrets.GITHUB_TOKEN }}
           path: bsc-load-test
-          ref: deposit_test
+          ref: opbnb
       - uses: actions/setup-node@v3
         with:
           node-version: 16
