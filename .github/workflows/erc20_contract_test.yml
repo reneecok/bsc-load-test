@@ -41,6 +41,7 @@ jobs:
           repository: node-real/bsc-load-test
           token: ${{ secrets.GITHUB_TOKEN }}
           path: bsc-load-test
+          ref: opbnb
       - name: start erc20 test
         id: erc20-contract-test
         env:
@@ -49,7 +50,7 @@ jobs:
         run: |
           export PATH=$PATH:/usr/local/go/bin
           export L2Token=${{ inputs.l2token-address }}
-          echo "run: ${{ inputs.env-name }}  uniswap-nft-tx-test "
+          echo "run: ${{ inputs.env-name }}  erc20-contract-test "
           cd bsc-load-test/load_test/
          
           go build -o build/driver driver.go
