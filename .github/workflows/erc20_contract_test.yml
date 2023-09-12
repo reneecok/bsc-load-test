@@ -54,7 +54,7 @@ jobs:
           cd bsc-load-test/load_test/
          
           go build -o build/driver driver.go
-          ./build/driver -randTestAcc -configPath=${{ inputs.env-name }}-pipeline.yml
+          ./build/driver -runErc20Check -configPath=${{ inputs.env-name }}-pipeline.yml
           echo $?
       - name: cc_warning
         id: cc-warning
