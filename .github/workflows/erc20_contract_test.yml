@@ -18,17 +18,17 @@ on:
         options:
           - opbnb-testnet
           - opbnb-mainnet
-    from-address:
-      description: 'from address'
-      required: true
-      default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
-      type: choice
-      options:
-        - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
-    l2token-address:
-      description: 'L2token address'
-      required: true
-      type: string
+      from-address:
+        description: 'from address'
+        required: true
+        default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+        type: choice
+        options:
+          - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+      l2token-address:
+        description: 'L2token address'
+        required: true
+        type: string
 jobs:
   uniswap-nft-tx-test:
     timeout-minutes: 10
