@@ -30,7 +30,7 @@ on:
         required: true
         type: string
 jobs:
-  uniswap-nft-tx-test:
+  erc20-contract-test:
     timeout-minutes: 10
     runs-on: [self-hosted, qa-infra-k8s]
     env:
