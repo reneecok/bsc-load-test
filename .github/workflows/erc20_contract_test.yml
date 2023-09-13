@@ -46,7 +46,7 @@ jobs:
         id: erc20-contract-test
         env:
           Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
-          Test_TestPRIVKEY02: ${{ secrets.TestPRIVKEY02 }}
+          Test_PRIVKEY02: ${{ secrets.TestPRIVKEY02 }}
           RUN_ID: ${{ github.run_id }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
