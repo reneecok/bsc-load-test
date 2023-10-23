@@ -217,11 +217,12 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
-	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
+	//gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
+	//if err != nil {
+	//	return nil, err
+	//}
+	gasTipCap := big.NewInt(1e9)
+	gasFeeCap := big.NewInt(2e9)
 	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
 		return nil, err
@@ -229,7 +230,7 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 	transactOpts.Nonce = big.NewInt(int64(*nonce))
 	transactOpts.Value = big.NewInt(0)
 	transactOpts.GasLimit = *gasLimit
-	transactOpts.GasFeeCap = gasTipCap.Add(gasTipCap, gasTipCap)
+	transactOpts.GasFeeCap = gasFeeCap
 	transactOpts.GasTipCap = gasTipCap
 	//
 	return transactOpts, nil
@@ -347,7 +348,7 @@ func (ea *ExtAcc) ApproveBEP20(nonce uint64, contAddr *common.Address, spenderAd
 
 // uniswap
 func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2Addr *common.Address, amountADesired *big.Int, amountBDesired *big.Int, toAddr *common.Address) (*common.Hash, error) {
-	gasLimit := uint64(5e6)
+	gasLimit := uint64(5e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
@@ -507,6 +508,7 @@ func (ea *ExtAcc) MintERC721(nonce uint64) (*common.Hash, error) {
 
 	tx, err := contracts.Erc721Instance.SafeMint(transactOpts, *ea.Addr)
 	if err != nil {
+		log.Errorf("address: %s, GasLimit: %d, GasFeeCap: %d", ea.Addr.Hex(), transactOpts.GasLimit, transactOpts.GasFeeCap)
 		return nil, err
 	}
 	txHash := tx.Hash()
