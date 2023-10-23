@@ -356,7 +356,7 @@ func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2A
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
 	tx, err := contracts.V2RouterInstance.AddLiquidity(transactOpts, *token1Addr, *token2Addr, amountADesired, amountBDesired, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
 	if err != nil {
-		log.Errorf("GasLimit: %d, GasPrice: %d,amountADesired: %d, amountBDesired: %d", transactOpts.GasLimit, transactOpts.GasPrice, amountADesired, amountBDesired)
+		log.Errorf("address: %s, GasLimit: %d, GasFeeCap: %d,amountADesired: %d, amountBDesired: %d", ea.Addr.Hex(), transactOpts.GasLimit, transactOpts.GasFeeCap, amountADesired, amountBDesired)
 		return nil, err
 	}
 	hash := tx.Hash()
