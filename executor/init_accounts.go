@@ -3,10 +3,11 @@ package executor
 import (
 	"bsc-load-test/utils"
 	"context"
-	"log"
 	"math/big"
 	"sync"
 	"time"
+
+	"bsc-load-test/log"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"

@@ -2,13 +2,14 @@ package utils
 
 import (
 	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"bsc-load-test/log"
 
 	"gopkg.in/yaml.v2"
 )

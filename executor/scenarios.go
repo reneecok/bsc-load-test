@@ -1,11 +1,12 @@
 package executor
 
 import (
-	"log"
 	"math/big"
 	"math/rand"
 
+	"bsc-load-test/log"
 	"bsc-load-test/utils"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 

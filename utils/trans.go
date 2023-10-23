@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"bsc-load-test/contracts/erc1155"
 	"bsc-load-test/contracts/erc721"
 	"bsc-load-test/contracts/wbnb"
+	"bsc-load-test/log"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -238,7 +238,7 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 func (ea *ExtAcc) BuildTransactOptsNoEip1559(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
 	gasPrice := big.NewInt(6e10)
 	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
-	log.Print("gasTipCap", gasTipCap)
+	log.Println("gasTipCap", gasTipCap)
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +278,8 @@ func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int)
 	}
 	err = ea.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
+
+		log.Printf("SendTransaction: %v , to: %s \n", err, toAddr.Hex())
 		return nil, err
 	}
 	hash := signedTx.Hash()

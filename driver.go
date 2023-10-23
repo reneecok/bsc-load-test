@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"math/rand"
 	"time"
 
 	"bsc-load-test/executor"
+	"bsc-load-test/log"
 	"bsc-load-test/utils"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -48,7 +48,7 @@ func init() {
 	// init config from config.yml
 	err := utils.T_cfg.LoadYml(tps, sec)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatal(err)
 	}
 }
 

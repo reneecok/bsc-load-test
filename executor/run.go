@@ -3,12 +3,12 @@ package executor
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"bsc-load-test/log"
 	"bsc-load-test/utils"
 
 	"github.com/ethereum/go-ethereum/common"
