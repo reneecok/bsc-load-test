@@ -324,7 +324,7 @@ func (ea *ExtAcc) SendBEP20(nonce uint64, contAddr *common.Address, toAddr *comm
 		return nil, err
 	}
 	hash := tx.Hash()
-	log.Printf("amount %d send bep20: %s \n", amount.Int64(), hash.Hex())
+	log.Printf("amount %s send bep20: %s \n", amount.String(), hash.Hex())
 	return &hash, nil
 }
 
@@ -356,6 +356,7 @@ func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2A
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
 	tx, err := contracts.V2RouterInstance.AddLiquidity(transactOpts, *token1Addr, *token2Addr, amountADesired, amountBDesired, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
 	if err != nil {
+		log.Errorf("GasLimit: %d, GasPrice: %d,amountADesired: %d, amountBDesired: %d", transactOpts.GasLimit, transactOpts.GasPrice, amountADesired, amountBDesired)
 		return nil, err
 	}
 	hash := tx.Hash()
