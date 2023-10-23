@@ -127,7 +127,7 @@ func (cfg *Config) LoadYml(tps, sec *int) error {
 
 	cfg.LiquidityInitAmount.Div(cfg.DistributeAmount, big.NewInt(4))
 	cfg.LiquidityTestAmount.Div(cfg.LiquidityInitAmount, big.NewInt(2.5e12))
-
+	log.Infof("===LiquidityInitAmount: %d, LiquidityTestAmount: %d===", cfg.LiquidityInitAmount, cfg.LiquidityTestAmount)
 	copyAmount := big.NewInt(cfg.DistributeAmount.Int64())
 	copyAmount.Mul(copyAmount, big.NewInt(int64(cfg.UsersLoaded)+int64(cfg.UsersLoaded/100)))
 	copyAmount.Div(copyAmount, big.NewInt(int64(cfg.SlaveUserLoaded)))
