@@ -17,7 +17,12 @@
    4. the config.yml file will be updated automatically, you can check the contract info and chain info
    5. set up tps in command line, slaveUserHexkeyFile and slaveUserLoaded params in config.yml 
    ```shell
-   nohup ./driver -initTestAcc -tps=80 > n.log &
+      # tps 400 means 
+      # 1. init BNB and BEP20  200 account/second (10w account need 500s);
+      # 2. init uniswap and nft 40 account/second (10w account need use about 10w/40 = 2500s)
+      # 10w account init need 3000s (2500s+500s )
+   nohup ./driver -initTestAcc -tps=400 > n.log & 
+
    ```
 5. Run Test
    1. change expected test time with sec params and tps params in command line or config.yml

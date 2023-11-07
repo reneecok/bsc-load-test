@@ -17,14 +17,24 @@ import (
 // actully, the real tps when runing initTestAcc command is nearly 3*Tps ~ 8*Tps
 func InitAccount(clients []*ethclient.Client, nonce uint64, root utils.ExtAcc) {
 	eaSlice := utils.Load(clients, utils.T_cfg.Hexkeyfile, &utils.T_cfg.UsersLoaded)
-	limiter := ratelimit.New(utils.T_cfg.Tps)
-	//
+	var initTokenLimiter, initCoinsLimit ratelimit.Limiter
+	if utils.T_cfg.Tps <= 10 {
+		initTokenLimiter = ratelimit.New(utils.T_cfg.Tps)
+		initCoinsLimit = ratelimit.New(utils.T_cfg.Tps)
+	} else {
+		initTokenLimiter = ratelimit.New(utils.T_cfg.Tps / 10)
+		initCoinsLimit = ratelimit.New(utils.T_cfg.Tps / 2)
+	}
+
 	slaveEaSlice := utils.Load(clients, utils.T_cfg.SlaveUserHexkeyFile, &utils.T_cfg.SlaveUserLoaded)
 	startTime := time.Now()
-	InitCoins(limiter, nonce, root, eaSlice, slaveEaSlice)
+	// InitCoins actual tps is initCoinsLimit*3
+	InitCoins(initCoinsLimit, nonce, root, eaSlice, slaveEaSlice)
 	endTime := time.Now()
 	log.Printf("init account: send coins total %f seconds.", endTime.Sub(startTime).Seconds())
-	InitSingleAccount(limiter, eaSlice)
+
+	// initToken actual tps is initTokenLimiter*10
+	InitSingleAccount(initTokenLimiter, eaSlice)
 	endTime = time.Now()
 	log.Printf("init account: finished, total %f seconds.", endTime.Sub(startTime).Seconds())
 
@@ -34,8 +44,6 @@ func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSli
 	// send coin to root accounts
 	log.Println("init account: send coins to slave accounts.")
 	for i, v := range slaveEaSlice {
-		limiter.Take()
-		//
 		_, err := root.SendBNB(nonce, v.Addr, utils.T_cfg.SlaveDistributeAmount)
 		if err != nil {
 			log.Println("error: send bnb:", err)
@@ -70,7 +78,6 @@ func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSli
 	var slaveWg sync.WaitGroup
 	slaveWg.Add(len(slaveEaSlice))
 	for i, v := range slaveEaSlice {
-		limiter.Take()
 		go func(wg *sync.WaitGroup, i int, ea utils.ExtAcc) {
 			defer wg.Done()
 			capNumber := utils.T_cfg.UsersLoaded / utils.T_cfg.SlaveUserLoaded
@@ -83,17 +90,16 @@ func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSli
 
 			for batchIndex, addr := range eaSlice[i*capNumber : (i+1)*capNumber] {
 				limiter.Take()
-				//
+
 				_, err = ea.SendBNB(slaveNonce, addr.Addr, utils.T_cfg.DistributeAmount)
 				if err != nil {
 					log.Printf("slave %d child %d amount %d error: send bnb: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
 					continue
 				}
+
 				slaveNonce++
-				//
 				if utils.T_cfg.Bep20Hex != "" {
 					index := i % len(utils.T_cfg.Bep20AddrsA)
-					//
 					_, err = ea.SendBEP20(slaveNonce, &utils.T_cfg.Bep20AddrsA[index], addr.Addr, utils.T_cfg.DistributeAmount)
 					if err != nil {
 						log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
@@ -101,7 +107,6 @@ func InitCoins(limiter ratelimit.Limiter, nonce uint64, root utils.ExtAcc, eaSli
 					}
 
 					slaveNonce++
-					//
 					_, err = ea.SendBEP20(slaveNonce, &utils.T_cfg.Bep20AddrsB[index], addr.Addr, utils.T_cfg.DistributeAmount)
 					if err != nil {
 						log.Printf("slave %d child %d amount %d error: send bep20: %s \n", i, batchIndex, utils.T_cfg.DistributeAmount.Int64(), err)
