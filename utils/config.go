@@ -146,7 +146,7 @@ func (cfg *Config) LoadYml(tps, sec *int) error {
 	}
 
 	log.Printf("Init config success! Endpoint: %s, tps: %d, sec: %d, userLoaded: %d, slaveUserLoaded: %d, distributeAmount: %d, slaveDistributeAmount: %d",
-		cfg.Endpoints, cfg.Tps, cfg.Sec, cfg.UsersLoaded, cfg.SlaveUserLoaded, cfg.DistributeAmount.Int64(), cfg.SlaveDistributeAmount.Int64())
+		cfg.Endpoints, cfg.Tps, cfg.Sec, cfg.UsersLoaded, cfg.SlaveUserLoaded, cfg.DistributeAmount, cfg.SlaveDistributeAmount)
 
 	return nil
 }

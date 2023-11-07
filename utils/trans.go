@@ -183,6 +183,7 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 	var txns uint64
 	var gasPerTx uint64
 	var allGasUsed uint64
+	emptyBlock := []uint64{}
 	for i := start; i < end; i++ {
 		blockNum := big.NewInt(i)
 		block, err := ea.Client.BlockByNumber(ctx, blockNum)
@@ -209,20 +210,31 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 			block.GasLimit(),
 			block.GasUsed(),
 			gasPerTx)
+		if len(block.Transactions()) < 10 {
+			emptyBlock = append(emptyBlock, block.Number().Uint64())
+		}
 		txns += uint64(len(block.Transactions())) - 1
 		allGasUsed += block.GasUsed()
 	}
 	gasPerTx = allGasUsed / txns
-	log.Printf("from: %d to: %d txns: %d gasPerTx: %d", start, end, txns, gasPerTx)
+	txPerBlock := int64(txns) / (end - start)
+	log.Printf("from: %d to: %d txns: %d gasPerTx: %d, txPerBlock: %d", start, end, txns, gasPerTx, txPerBlock)
+	log.Infof(" %d empty block: %v", len(emptyBlock), emptyBlock)
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
-	//gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
-	//if err != nil {
-	//	return nil, err
-	//}
-	gasTipCap := big.NewInt(1e9)
-	gasFeeCap := big.NewInt(2e9)
+	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	gasFeeCap, err := ea.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	//ea.Client.SuggestGasPrice()
+	if gasTipCap.Int64() > 1e9 {
+		log.Println("===suggest gasTip > 1e9===", gasTipCap)
+	}
 	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
 		return nil, err
@@ -279,12 +291,11 @@ func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int)
 	}
 	err = ea.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-
-		log.Printf("SendTransaction: %v , to: %s \n", err, toAddr.Hex())
+		log.Printf("SendTransaction: %v ,from: %s, to: %s \n", err, ea.Addr.Hex(), toAddr.Hex())
 		return nil, err
 	}
 	hash := signedTx.Hash()
-	log.Printf("amount %d send bnb: %s \n", amount.Int64(), hash.Hex())
+	log.Printf("amount %s send bnb: %s \n", amount.String(), hash.Hex())
 	return &hash, nil
 }
 
