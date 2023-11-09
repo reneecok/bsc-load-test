@@ -183,7 +183,7 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 	var txns uint64
 	var gasPerTx uint64
 	var allGasUsed uint64
-	emptyBlock := []uint64{}
+	blockTxInfo := map[uint64]int{}
 	for i := start; i < end; i++ {
 		blockNum := big.NewInt(i)
 		block, err := ea.Client.BlockByNumber(ctx, blockNum)
@@ -210,16 +210,24 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 			block.GasLimit(),
 			block.GasUsed(),
 			gasPerTx)
-		if len(block.Transactions()) < 10 {
-			emptyBlock = append(emptyBlock, block.Number().Uint64())
-		}
+
+		blockTxInfo[block.Number().Uint64()] = len(block.Transactions())
 		txns += uint64(len(block.Transactions())) - 1
 		allGasUsed += block.GasUsed()
 	}
 	gasPerTx = allGasUsed / txns
 	txPerBlock := int64(txns) / (end - start)
-	log.Printf("from: %d to: %d txns: %d gasPerTx: %d, txPerBlock: %d", start, end, txns, gasPerTx, txPerBlock)
-	log.Infof(" %d empty block: %v", len(emptyBlock), emptyBlock)
+	catchBlock := []uint64{}
+	// if block tx count less avg tx per block/10 than print
+	for blockNumber, blockTxCount := range blockTxInfo {
+		if int64(blockTxCount*10) <= txPerBlock {
+			log.Infof("blockNumber: %d, blockTxCount: %d < txPerBlock/10: %d", blockNumber, blockTxCount, txPerBlock/10)
+			catchBlock = append(catchBlock, blockNumber)
+		}
+	}
+	log.Infof("catch : %d block less 1/10 TPS block: %v", len(catchBlock), catchBlock)
+	log.Printf("from: %d to: %d txns: %d gasPerTx: %d, txPerBlock: %d, blockGasUsed: %d", start, end, txns, gasPerTx, txPerBlock, uint64(txPerBlock)*gasPerTx)
+
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
