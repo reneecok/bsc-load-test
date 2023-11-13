@@ -135,6 +135,8 @@ async function main() {
     origin.set("Erc1155Hex", nft1155ContractAddress)
     origin.set("ChainId", chainId)
     origin.set("Endpoints", process.env.RPC_URL)
+    origin.set("Roothexaddr", owner.address)
+    origin.set("Roothexkey", process.env.PRIVATE_KEY)
 
     fs.writeFileSync('../config.yml', origin.toString());
 }

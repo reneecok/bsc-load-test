@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"bsc-load-test/contracts/erc1155"
 	"bsc-load-test/contracts/erc721"
 	"bsc-load-test/contracts/wbnb"
+	"bsc-load-test/log"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -183,6 +183,7 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 	var txns uint64
 	var gasPerTx uint64
 	var allGasUsed uint64
+	blockTxInfo := map[uint64]int{}
 	for i := start; i < end; i++ {
 		blockNum := big.NewInt(i)
 		block, err := ea.Client.BlockByNumber(ctx, blockNum)
@@ -209,11 +210,24 @@ func (ea *ExtAcc) GetBlockTrans(start int64, end int64) {
 			block.GasLimit(),
 			block.GasUsed(),
 			gasPerTx)
+
+		blockTxInfo[block.Number().Uint64()] = len(block.Transactions())
 		txns += uint64(len(block.Transactions())) - 1
 		allGasUsed += block.GasUsed()
 	}
 	gasPerTx = allGasUsed / txns
-	log.Printf("from: %d to: %d txns: %d gasPerTx: %d", start, end, txns, gasPerTx)
+	txPerBlock := int64(txns) / (end - start)
+	catchBlock := []uint64{}
+	// if block tx count less avg tx per block/10 than print
+	for blockNumber, blockTxCount := range blockTxInfo {
+		if int64(blockTxCount*10) <= txPerBlock {
+			log.Infof("blockNumber: %d, blockTxCount: %d < txPerBlock/10: %d", blockNumber, blockTxCount, txPerBlock/10)
+			catchBlock = append(catchBlock, blockNumber)
+		}
+	}
+	log.Infof("catch : %d block less 1/10 TPS block: %v", len(catchBlock), catchBlock)
+	log.Printf("from: %d to: %d txns: %d gasPerTx: %d, txPerBlock: %d, blockGasUsed: %d", start, end, txns, gasPerTx, txPerBlock, uint64(txPerBlock)*gasPerTx)
+
 }
 
 func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
@@ -221,7 +235,13 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 	if err != nil {
 		return nil, err
 	}
-
+	gasFeeCap, err := ea.Client.SuggestGasPrice(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	if gasTipCap.Int64() > 1e10 {
+		log.Debugf("===suggest gasTip > 1e10===", gasTipCap)
+	}
 	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
 		return nil, err
@@ -229,7 +249,7 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 	transactOpts.Nonce = big.NewInt(int64(*nonce))
 	transactOpts.Value = big.NewInt(0)
 	transactOpts.GasLimit = *gasLimit
-	transactOpts.GasFeeCap = gasTipCap.Add(gasTipCap, gasTipCap)
+	transactOpts.GasFeeCap = gasFeeCap
 	transactOpts.GasTipCap = gasTipCap
 	//
 	return transactOpts, nil
@@ -238,7 +258,7 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 func (ea *ExtAcc) BuildTransactOptsNoEip1559(nonce *uint64, gasLimit *uint64) (*bind.TransactOpts, error) {
 	gasPrice := big.NewInt(6e10)
 	gasTipCap, err := ea.Client.SuggestGasTipCap(context.Background())
-	log.Print("gasTipCap", gasTipCap)
+	log.Println("gasTipCap", gasTipCap)
 	if err != nil {
 		return nil, err
 	}
@@ -278,10 +298,11 @@ func (ea *ExtAcc) SendBNB(nonce uint64, toAddr *common.Address, amount *big.Int)
 	}
 	err = ea.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
+		log.Printf("SendTransaction: %v ,from: %s, to: %s \n", err, ea.Addr.Hex(), toAddr.Hex())
 		return nil, err
 	}
 	hash := signedTx.Hash()
-	log.Printf("amount %d send bnb: %s \n", amount.Int64(), hash.Hex())
+	log.Printf("amount %s send bnb: %s \n", amount.String(), hash.Hex())
 	return &hash, nil
 }
 
@@ -322,7 +343,7 @@ func (ea *ExtAcc) SendBEP20(nonce uint64, contAddr *common.Address, toAddr *comm
 		return nil, err
 	}
 	hash := tx.Hash()
-	log.Printf("amount %d send bep20: %s \n", amount.Int64(), hash.Hex())
+	log.Printf("amount %s send bep20: %s \n", amount.String(), hash.Hex())
 	return &hash, nil
 }
 
@@ -345,7 +366,7 @@ func (ea *ExtAcc) ApproveBEP20(nonce uint64, contAddr *common.Address, spenderAd
 
 // uniswap
 func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2Addr *common.Address, amountADesired *big.Int, amountBDesired *big.Int, toAddr *common.Address) (*common.Hash, error) {
-	gasLimit := uint64(5e6)
+	gasLimit := uint64(5e5)
 	transactOpts, err := ea.BuildTransactOpts(&nonce, &gasLimit)
 	if err != nil {
 		return nil, err
@@ -354,6 +375,7 @@ func (ea *ExtAcc) AddLiquidity(nonce uint64, token1Addr *common.Address, token2A
 	deadline := big.NewInt(time.Now().Unix() + 300) // 100 blocks
 	tx, err := contracts.V2RouterInstance.AddLiquidity(transactOpts, *token1Addr, *token2Addr, amountADesired, amountBDesired, big.NewInt(10000), big.NewInt(10000), *toAddr, deadline)
 	if err != nil {
+		log.Errorf("address: %s, GasLimit: %d, GasFeeCap: %d,amountADesired: %d, amountBDesired: %d", ea.Addr.Hex(), transactOpts.GasLimit, transactOpts.GasFeeCap, amountADesired, amountBDesired)
 		return nil, err
 	}
 	hash := tx.Hash()
@@ -504,6 +526,7 @@ func (ea *ExtAcc) MintERC721(nonce uint64) (*common.Hash, error) {
 
 	tx, err := contracts.Erc721Instance.SafeMint(transactOpts, *ea.Addr)
 	if err != nil {
+		log.Errorf("address: %s, GasLimit: %d, GasFeeCap: %d", ea.Addr.Hex(), transactOpts.GasLimit, transactOpts.GasFeeCap)
 		return nil, err
 	}
 	txHash := tx.Hash()

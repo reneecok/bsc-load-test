@@ -2,13 +2,14 @@ package utils
 
 import (
 	"io/ioutil"
-	"log"
 	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"bsc-load-test/log"
 
 	"gopkg.in/yaml.v2"
 )
@@ -126,7 +127,7 @@ func (cfg *Config) LoadYml(tps, sec *int) error {
 
 	cfg.LiquidityInitAmount.Div(cfg.DistributeAmount, big.NewInt(4))
 	cfg.LiquidityTestAmount.Div(cfg.LiquidityInitAmount, big.NewInt(2.5e12))
-
+	log.Infof("===LiquidityInitAmount: %d, LiquidityTestAmount: %d===", cfg.LiquidityInitAmount, cfg.LiquidityTestAmount)
 	copyAmount := big.NewInt(cfg.DistributeAmount.Int64())
 	copyAmount.Mul(copyAmount, big.NewInt(int64(cfg.UsersLoaded)+int64(cfg.UsersLoaded/100)))
 	copyAmount.Div(copyAmount, big.NewInt(int64(cfg.SlaveUserLoaded)))
@@ -145,7 +146,7 @@ func (cfg *Config) LoadYml(tps, sec *int) error {
 	}
 
 	log.Printf("Init config success! Endpoint: %s, tps: %d, sec: %d, userLoaded: %d, slaveUserLoaded: %d, distributeAmount: %d, slaveDistributeAmount: %d",
-		cfg.Endpoints, cfg.Tps, cfg.Sec, cfg.UsersLoaded, cfg.SlaveUserLoaded, cfg.DistributeAmount.Int64(), cfg.SlaveDistributeAmount.Int64())
+		cfg.Endpoints, cfg.Tps, cfg.Sec, cfg.UsersLoaded, cfg.SlaveUserLoaded, cfg.DistributeAmount, cfg.SlaveDistributeAmount)
 
 	return nil
 }
