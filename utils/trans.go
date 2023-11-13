@@ -239,9 +239,8 @@ func (ea *ExtAcc) BuildTransactOpts(nonce *uint64, gasLimit *uint64) (*bind.Tran
 	if err != nil {
 		return nil, err
 	}
-	//ea.Client.SuggestGasPrice()
-	if gasTipCap.Int64() > 1e9 {
-		log.Println("===suggest gasTip > 1e9===", gasTipCap)
+	if gasTipCap.Int64() > 1e10 {
+		log.Debugf("===suggest gasTip > 1e10===", gasTipCap)
 	}
 	transactOpts, err := bind.NewKeyedTransactorWithChainID(ea.Key, T_cfg.ChainId)
 	if err != nil {
