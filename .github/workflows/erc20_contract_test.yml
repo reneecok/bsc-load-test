@@ -18,6 +18,7 @@ on:
         options:
           - opbnb-testnet
           - opbnb-mainnet
+          - combo-mainnet
       from-address:
         description: 'from address'
         required: true
@@ -25,6 +26,7 @@ on:
         type: choice
         options:
           - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+          - '0x2da20a68879846E6FE30a704d776dC214943d27C'
       l2token-address:
         description: 'L2token address'
         required: true
@@ -45,12 +47,16 @@ jobs:
       - name: start erc20 test
         id: erc20-contract-test
         env:
-          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
           Test_PRIVKEY02: ${{ secrets.TestPRIVKEY02 }}
           RUN_ID: ${{ github.run_id }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
           export L2Token=${{ inputs.l2token-address }}
+          export Test_PRIVKEY=${{ secrets.TestPRIVKEY }}
+          if [[ "${{ inputs.env-name }}" = combo-mainnet ]];
+          then  
+              export Test_PRIVKEY=${{ secrets.ComboPRIVKEY }}
+          fi
           echo "run: ${{ inputs.env-name }}  erc20-contract-test "
           cd bsc-load-test/load_test/
          

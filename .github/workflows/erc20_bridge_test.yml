@@ -32,6 +32,7 @@ on:
         options:
           - opbnbtestnet
           - opbnbmainnet
+          - combomainnet
       from-address:
         description: 'from address'
         required: true
@@ -39,6 +40,7 @@ on:
         type: choice
         options:
           - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+          - '0x2da20a68879846E6FE30a704d776dC214943d27C'
       amount:
         description: 'amount'
         required: false
@@ -75,13 +77,17 @@ jobs:
       - name: start ERC20 Bridge 
         id: erc20-bridge-test
         env:
-          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
           RUN_ID: ${{ github.run_id }}
         run: |
           echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
           cd bsc-load-test/func_test/uniswap_721_1155
           export TestENV=${{ inputs.env-name }}
           export AMOUNT=${{ inputs.amount }}
+          export Test_PRIVKEY=${{ secrets.TestPRIVKEY }}
+          if [[ "${{ inputs.env-name }}" = combomainnet ]];
+          then  
+              export Test_PRIVKEY=${{ secrets.ComboPRIVKEY }}
+          fi
           export L1Token=${{ inputs.l1token-address }}
           export L2Token=${{ inputs.l2token-address }}
           if  [[ "${{ inputs.test-name }}" = deposit-erc20 ]];
