@@ -40,6 +40,7 @@ on:
         type: choice
         options:
           - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+          - '0x2da20a68879846E6FE30a704d776dC214943d27C'
       amount:
         description: 'amount'
         required: false
