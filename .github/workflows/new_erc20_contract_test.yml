@@ -1,4 +1,4 @@
-name: Erc20 contract test
+name: new Erc20 contract test
 
 on:
   repository_dispatch:

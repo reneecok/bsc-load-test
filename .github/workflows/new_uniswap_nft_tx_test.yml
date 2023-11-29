@@ -1,4 +1,4 @@
-name: Uniswap and Nft tx test
+name: new Uniswap and Nft tx test
 
 on:
   repository_dispatch:
