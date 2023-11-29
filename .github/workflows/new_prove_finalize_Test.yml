@@ -1,4 +1,4 @@
-name: Prove_Fnalize Test
+name: new Prove_Fnalize Test
 
 on:
   repository_dispatch:

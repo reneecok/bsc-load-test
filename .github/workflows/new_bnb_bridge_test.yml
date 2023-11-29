@@ -1,4 +1,4 @@
-name: BNB Bridge Test
+name: new BNB Bridge Test
 
 on:
   repository_dispatch:

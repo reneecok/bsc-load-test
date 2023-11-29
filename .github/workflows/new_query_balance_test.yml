@@ -1,4 +1,4 @@
-name: Query Balance Test
+name: new Query Balance Test
 
 on:
   repository_dispatch:

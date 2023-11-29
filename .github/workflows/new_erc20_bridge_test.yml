@@ -1,4 +1,4 @@
-name: ERC20 Bridge Test
+name: new ERC20 Bridge Test
 
 on:
   repository_dispatch:
