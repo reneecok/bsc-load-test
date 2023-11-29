@@ -24,6 +24,14 @@ on:
         options:
           - prove-withdraw
           - finalize-withdraw
+      from-address:
+        description: 'from address'
+        required: true
+        default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+        type: choice
+        options:
+          - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+          - '0x2da20a68879846E6FE30a704d776dC214943d27C'
       env-name:
         description: 'run envName'
         required: true
@@ -32,13 +40,7 @@ on:
         options:
           - opbnbtestnet
           - opbnbmainnet
-      from-address:
-        description: 'from address'
-        required: true
-        default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
-        type: choice
-        options:
-          - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+          - combomainnet
       withdraw-hash:
         description: 'L2 withdraw hash'
         required: true
@@ -66,7 +68,6 @@ jobs:
       - name: start prove or finalize 
         id: prove-finalize-test
         env:
-          Test_PRIVKEY: ${{ secrets.TestPRIVKEY }}
           RUN_ID: ${{ github.run_id }}
         run: |
           echo "run: ${{ inputs.env-name }} ${{ inputs.test-name }} "
@@ -74,6 +75,11 @@ jobs:
           
           export TestENV=${{ inputs.env-name }}
           export WithdrawHash=${{ inputs.withdraw-hash }}
+          export Test_PRIVKEY=${{ secrets.TestPRIVKEY }}
+          if [[ "${{ inputs.env-name }}" = combo-mainnet ]];
+          then  
+              export Test_PRIVKEY=${{ secrets.ComboPRIVKEY }}
+          fi
           if  [[ "${{ inputs.test-name }}" = prove-withdraw ]];
           then  
               export WithdrawOperation=proveWithdraw
