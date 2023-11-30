@@ -32,6 +32,7 @@ jobs:
           repository: node-real/bsc-load-test
           token: ${{ secrets.GITHUB_TOKEN }}
           path: bsc-load-test
+          ref: opbnb
       - name: start send tx
         id: uniswap-nft-tx-test
         run: |
