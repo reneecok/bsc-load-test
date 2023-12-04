@@ -33,6 +33,7 @@ on:
           - opbnbtestnet
           - opbnbmainnet
           - combomainnet
+          - opbnbqa
       from-address:
         description: 'from address'
         required: true
