@@ -43,9 +43,11 @@ on:
         default: '0.0001'
 
 jobs:
-  bnb-bridge-test:
+  bnb_erc20_test:
     timeout-minutes: 15
     runs-on: [self-hosted, qa-infra-k8s]
+    env:
+      github_context: '${{ toJSON(github) }}'
     steps:
       - uses: actions/checkout@v3
         with:
