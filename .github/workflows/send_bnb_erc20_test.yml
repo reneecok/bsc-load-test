@@ -1,0 +1,96 @@
+name: BNB & ERC20 Test
+
+on:
+  repository_dispatch:
+    types: [transfer-test]
+  workflow_call:
+    inputs:
+      test-name:
+        required: true
+        type: string
+      env-name:
+        required: true
+        type: string
+      ref:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      test-name:
+        description: 'choose network or region'
+        required: true
+        default: 'bsc-mainnet-ap'
+        type: choice
+        options:
+          - bsc-mainnet-ap
+          - bsc-mainnet-eu
+          - bsc-mainnet-us
+      from-address:
+        description: 'from address'
+        required: true
+        default: '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+        type: choice
+        options:
+          - '0xc5098ce789965A19A17987e02b0F789E65A21F16'
+      token-address:
+        description: 'token address'
+        required: true
+        type: string
+      amount:
+        description: 'amount'
+        required: false
+        type: string
+        default: '0.0001'
+
+jobs:
+  bnb-bridge-test:
+    timeout-minutes: 15
+    runs-on: [self-hosted, qa-infra-k8s]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: node-real/bsc-load-test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: bsc-load-test
+          ref: opbnb
+      - name: start bnb & erc20 tx test
+        id: bnb-erc20-tx-test
+        run: |
+          export PATH=$PATH:/usr/local/go/bin
+          echo "run: ${{ inputs.env-name }}  bnb-erc20-tx-test "
+          cd bsc-load-test/load_test/
+          if [[ "${{ inputs.test-name }}" = bsc-mainnet-ap ]];
+          then  
+              sed -i 's/5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125/${{ secrets.TestPRIVKEY }}/g' bsc-mainnet-ap-pipeline.yml
+          fi
+          if [[ "${{ inputs.test-name }}" = bsc-mainnet-eu ]];
+          then  
+              sed -i 's/5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125/${{ secrets.TestPRIVKEY }}/g' bsc-mainnet-eu-pipeline.yml
+          fi
+          if [[ "${{ inputs.test-name }}" = bsc-mainnet-us ]];
+          then  
+              sed -i 's/5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125/${{ secrets.TestPRIVKEY }}/g' bsc-mainnet-us-pipeline.yml
+          fi
+          go build -o build/driver driver.go
+          ./build/driver -runSendBNBAndErc20 -configPath=${{ inputs.test-name }}-pipeline.yml -transferErc20TokenAddress=${{ inputs.token-address }}
+          echo $?
+#      - name: cc_warning
+#        id: cc-warning
+#        if: failure()
+#        uses: indiesdev/curl@v1.1
+#        with:
+#          url: ${{ secrets.CCURL }}
+#          method: "POST"
+#          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
+#          timeout: 5000
+#          body: '{ "groupID": "${{secrets.CCGroupID}}",  "msg": "-----------------------\n* run ${{ inputs.test-name }} failure!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
+#      - name: cc_info
+#        id: cc-info
+#        if: success()
+#        uses: indiesdev/curl@v1.1
+#        with:
+#          url: ${{ secrets.CCURL }}
+#          method: "POST"
+#          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
+#          timeout: 5000
+#          body: '{ "groupID": "${{secrets.CCGroupID}}",  "msg": "-----------------------\n* run ${{ inputs.test-name }}  pass!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
