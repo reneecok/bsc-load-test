@@ -86,13 +86,13 @@ jobs:
           headers: '{ "app": "ccalert","Content-Type":"application/json" }'
           timeout: 5000
           body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }} send quick txs failure!*\nDETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
-      - name: cc_info
-        id: cc-info
-        if: success()
-        uses: indiesdev/curl@v1.1
-        with:
-          url: ${{ secrets.CCURL }}
-          method: "POST"
-          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
-          timeout: 5000
-          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }}  send quick txs pass!*\nDETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
+#      - name: cc_info
+#        id: cc-info
+#        if: success()
+#        uses: indiesdev/curl@v1.1
+#        with:
+#          url: ${{ secrets.CCURL }}
+#          method: "POST"
+#          headers: '{ "app": "ccalert","Content-Type":"application/json" }'
+#          timeout: 5000
+#          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }}  send quick txs pass!*\nDETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
