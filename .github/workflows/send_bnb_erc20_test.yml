@@ -74,7 +74,7 @@ jobs:
               sed -i 's/5f4e1f061c905b0e8c5913d3683f2f3353bf2dfb0c91713d7f293d9a597b0125/${{ secrets.TestPRIVKEY }}/g' bsc-mainnet-us-pipeline.yml
           fi
           go build -o build/driver driver.go
-          ./build/driver -runSendBNBAndErc20 -configPath=${{ inputs.test-name }}-pipeline.yml -transferErc20TokenAddress=${{ inputs.token-address }}
+          ./build/driver -runSendBNBAndErc20 -configPath=${{ inputs.test-name }}-pipeline.yml -transferErc20TokenAddress=${{ inputs.token-address }} -transferAmount=${{ inputs.amount }}
           echo $?
       - name: cc_warning
         id: cc-warning
