@@ -85,7 +85,7 @@ jobs:
           method: "POST"
           headers: '{ "app": "ccalert","Content-Type":"application/json" }'
           timeout: 5000
-          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }} failure!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
+          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }} send quick txs failure!*\nDETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
       - name: cc_info
         id: cc-info
         if: success()
@@ -95,4 +95,4 @@ jobs:
           method: "POST"
           headers: '{ "app": "ccalert","Content-Type":"application/json" }'
           timeout: 5000
-          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }}  pass!*\n-------------------DETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
+          body: '{ "groupID": "025e6af5542447cb9e75736e2c7495c2",  "msg": "-----------------------\n* run ${{ inputs.test-name }}  send quick txs pass!*\nDETAILS*: \n*LINK*:  ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }'
