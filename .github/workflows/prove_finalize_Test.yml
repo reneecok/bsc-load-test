@@ -42,6 +42,7 @@ on:
           - opbnbmainnet
           - combomainnet
           - opbnbqa
+          - opbnbfork
       withdraw-hash:
         description: 'L2 withdraw hash'
         required: true

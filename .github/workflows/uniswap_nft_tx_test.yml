@@ -20,6 +20,7 @@ on:
           - opbnb-testnet
           - opbnb-mainnet
           - combo-mainnet
+          - opbnb-fork
 jobs:
   uniswap-nft-tx-test:
     timeout-minutes: 10

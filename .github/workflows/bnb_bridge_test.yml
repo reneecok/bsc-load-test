@@ -34,6 +34,7 @@ on:
           - opbnbmainnet
           - combomainnet
           - opbnbqa
+          - opbnbfork
       from-address:
         description: 'from address'
         required: true
