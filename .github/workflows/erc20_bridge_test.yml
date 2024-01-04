@@ -27,7 +27,7 @@ on:
       env-name:
         description: 'run envName'
         required: true
-        default: 'opbnbtestnet'
+        default: 'opbnbmainnet'
         type: choice
         options:
           - opbnbtestnet
