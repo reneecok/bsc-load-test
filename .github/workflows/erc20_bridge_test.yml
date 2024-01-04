@@ -52,10 +52,12 @@ on:
         description: 'L1token address'
         required: false
         type: string
+        default: "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"
       l2token-address:
         description: 'L2token address'
         required: false
         type: string
+        default: "0xd08a2917653d4e460893203471f0000826fb4034"
 jobs:
   bnb-bridge-test:
     timeout-minutes: 15
