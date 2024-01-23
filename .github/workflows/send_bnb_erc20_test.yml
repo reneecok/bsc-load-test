@@ -45,7 +45,7 @@ on:
 jobs:
   bnb_erc20_test:
     timeout-minutes: 15
-    runs-on: [self-hosted, qa-infra-k8s]
+    runs-on: [self-hosted, qa-qatest-runners]
     env:
       github_context: '${{ toJSON(github) }}'
     steps:

@@ -24,7 +24,7 @@ on:
 jobs:
   uniswap-nft-tx-test:
     timeout-minutes: 10
-    runs-on: [self-hosted, qa-infra-k8s]
+    runs-on: [self-hosted, qa-qatest-runners]
     env:
       github_context: '${{ toJSON(github) }}'
     steps:
