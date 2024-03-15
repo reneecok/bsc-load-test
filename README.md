@@ -30,7 +30,8 @@
    3. check on the monitor of the network and adjust param tps
    ```shell
    nohup ./driver -runTestAcc -tps=200 -sec=86400 > n.log &
-   ```
+   nohup ./driver -runTestAcc -tps=1000 -sec=600 > n.log &
+      ```
 6. Other Functions
    check on block info whether the network is working 
    ```shell

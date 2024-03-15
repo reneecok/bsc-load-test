@@ -45,7 +45,10 @@ async function main() {
     console.log("==== bep20 deployed======");
     console.log('bep20: ' + addresses);
 
-    let factory = await Factory.deploy(owner.address);
+    let factory = await Factory.deploy(owner.address, {
+        gasLimit: 9000000,
+        gasPrice: 10000000000,
+    });
     await factory.deployed();
     console.log('factory: ' + factory.address);
 
@@ -62,27 +65,39 @@ async function main() {
     console.log('from: ' + from);
     console.log('to: ' + to);
 
-    let wbnb = await WBNB.deploy();
+    let wbnb = await WBNB.deploy({
+        gasLimit: 9000000,
+        gasPrice: 10000000000,
+    });
     await wbnb.deployed();
     console.log('wbnb: ' + wbnb.address);
     contractAddress['WBNB'] = wbnb.address
 
     for (let i = 0; i < addresses_.length / 2; i++) {
 
-        let transaction = await factory.createPair(from[i], to[i]);
+        let transaction = await factory.createPair(from[i], to[i], {
+            gasLimit: 9000000,
+            gasPrice: 10000000000,
+        });
         let tx_receipt = await transaction.wait()
         console.log('pair: ' , from[i], to[i],' status: ' + tx_receipt.status);
 
         let pair0 = await factory.getPair(from[i], to[i]);
         console.log('index: ' + i + ' pair0: ' + pair0)
 
-        let transaction2 = await factory.createPair(from[i], wbnb.address);
+        let transaction2 = await factory.createPair(from[i], wbnb.address, {
+            gasLimit: 9000000,
+            gasPrice: 10000000000,
+        });
         let tx_receipt2 = await transaction2.wait()
         console.log('pair: ' , from[i], wbnb.address,' status: '  + tx_receipt2.status);
         let pair1 = await factory.getPair(from[i], wbnb.address);
         console.log('index: ' + i + ' pair1: ' + pair1)
 
-        let transaction3 = await factory.createPair(to[i], wbnb.address);
+        let transaction3 = await factory.createPair(to[i], wbnb.address, {
+            gasLimit: 9000000,
+            gasPrice: 10000000000,
+        });
         let tx_receipt3 = await transaction3.wait()
         console.log('pair: ' , to[i], wbnb.address,' status: '  + tx_receipt3.status);
 
@@ -92,17 +107,26 @@ async function main() {
     }
 
 
-    let router = await Router.deploy(factory.address, wbnb.address)
+    let router = await Router.deploy(factory.address, wbnb.address, {
+        gasLimit: 9000000,
+        gasPrice: 10000000000,
+    })
     await router.deployed();
     console.log('router: ' + router.address);
     contractAddress['Router'] = router.address
 
-    let nft721 = await Nft721.deploy()
+    let nft721 = await Nft721.deploy({
+        gasLimit: 9000000,
+        gasPrice: 10000000000,
+    })
     await nft721.deployed()
     console.log('nft721: ' + nft721.address);
     contractAddress['Nft721'] = nft721.address
 
-    let nft1155 = await Nft1155.deploy()
+    let nft1155 = await Nft1155.deploy({
+        gasLimit: 9000000,
+        gasPrice: 10000000000,
+    })
     await nft1155.deployed()
     console.log('nft1155: ' + nft1155.address);
     contractAddress['Nft1155'] = nft1155.address
