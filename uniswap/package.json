@@ -7,7 +7,8 @@
     "@uniswap/v2-core": "uniswap/v2-core",
     "dotenv": "^16.0.3",
     "npx": "^10.2.2",
-    "yaml": "^2.2.1"
+    "yaml": "^2.2.1",
+    "yarn": "^1.22.22"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",

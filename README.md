@@ -21,7 +21,7 @@
       # 1. init BNB and BEP20  200 account/second (10w account need 500s);
       # 2. init uniswap and nft 40 account/second (10w account need use about 10w/40 = 2500s)
       # 10w account init need 3000s (2500s+500s ) The actual time cost  ~3600s
-   nohup ./driver -initTestAcc -tps=400 > n.log & 
+   nohup ./driver -initTestAcc -tps=200 > n.log & 
 
    ```
 5. Run Test
@@ -29,8 +29,8 @@
    2. change slaveUserHexkeyFile and slaveUserLoaded params in config.yml
    3. check on the monitor of the network and adjust param tps
    ```shell
-   nohup ./driver -runTestAcc -tps=200 -sec=86400 > n.log &
-   nohup ./driver -runTestAcc -tps=1000 -sec=600 > n.log &
+   nohup ./driver -runTestAcc -tps=200 -sec=300 > n.log &
+   nohup ./driver -runTestAcc -tps=1000 -sec=300 > n.log &
       ```
 6. Other Functions
    check on block info whether the network is working 
